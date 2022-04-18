@@ -6,6 +6,7 @@
 /client/package-lock.json
 /server/package-lock.json
 /client/build
+/server/media/access
 
 
 /.pnp

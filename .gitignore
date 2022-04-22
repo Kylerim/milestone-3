@@ -7,7 +7,7 @@
 /server/package-lock.json
 /client/build
 /server/media/access
-
+/server/.vs
 
 /.pnp
 .pnp.js

@@ -11,16 +11,20 @@ function Home() {
     const [docName, setDocName] = useState("");
 
     const fetchdocList = async () => {
-        console.log("fetching doc list");
+        console.log("Fetching doc list...");
         const response = await fetch(endpointDocList, {
             method: "GET",
             credentials: "include",
         });
-        if (!response.error) {
+        if (response.error) {
             console.log("ERR:", response.message);
         }
         const docListIn = await response.json();
-        console.log(docListIn);
+        if (docListIn.length > 0) {
+            console.log(docListIn);
+        } else {
+            console.log("Emtpy Documents List");
+        }
         setDocList(docListIn);
     };
 
@@ -40,15 +44,15 @@ function Home() {
         });
 
         const data = await response.json();
-        console.log("[Created Doc Id]: ", data.docId);
+        console.log("[Created Doc Id]: ", data.docid);
 
         fetchdocList();
-        console.log("Updating the list of documents: ", docList);
+        console.log("Updating the list of documents...");
     };
 
-    const fetchDeleteDoc = async (docId) => {
+    const fetchDeleteDoc = async (docid) => {
         console.log("fetchDeleteDoc");
-        const sendData = { docid: docId };
+        const sendData = { docid: docid };
         const response = await fetch(endpointDeleteDoc, {
             method: "POST",
             headers: {

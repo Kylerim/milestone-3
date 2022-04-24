@@ -236,7 +236,28 @@ function TextEditor() {
 
     return (
         <div>
-            <p>KYLERIM - version {version} </p>
+            <p
+                style={{
+                    marginLeft: 20,
+                    fontSize: "20px",
+                    color: "darkblue",
+                }}
+            >
+                Document Name:
+                <span
+                    style={{ fontSize: "24px", color: "blue", marginLeft: 10 }}
+                >
+                    {docId.split("-")[docId.split("-").length - 1]}
+                </span>
+            </p>
+            <p style={{ marginLeft: 20, fontSize: "16px", color: "navy" }}>
+                Version:{" "}
+                <span
+                    style={{ fontSize: "20px", color: "blue", marginLeft: 10 }}
+                >
+                    {version}
+                </span>
+            </p>
             <ul>
                 {" "}
                 {presences.map((presence) => (

@@ -9,7 +9,7 @@ import {
 function Home() {
     const [docList, setDocList] = useState([]);
     const [docName, setDocName] = useState("");
-
+    const [searchQuery, setSearchQuery] = useState("");
     const fetchdocList = async () => {
         console.log("Fetching doc list...");
         const response = await fetch(endpointDocList, {
@@ -82,6 +82,24 @@ function Home() {
             {/* <input>Input Field</input> */}
             <input
                 onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                }}
+                required
+            />
+            <button
+                onClick={() => {
+                    alert("Searching");
+                }}
+            >
+                Search
+            </button>
+
+            <br></br>
+            <br></br>
+            <br></br>
+
+            <input
+                onChange={(e) => {
                     setDocName(e.target.value);
                 }}
                 required
@@ -97,7 +115,7 @@ function Home() {
                 {docList.map((doc) => (
                     <li key={doc.id}>
                         <Link to={`/doc/edit/${doc.id}`}>
-                            {doc.name} : {doc.id}
+                            {doc.name} | {doc.id}
                         </Link>
                         <button
                             style={{ marginLeft: 20 }}

@@ -1,91 +1,104 @@
-const WebSocket = require('ws')
-const express = require('express')
-var ShareDB = require('sharedb/lib/client');
-const session = require('express-session')
-const { mongooseConnection } = require('./db/connectDB');
-const MongoStore = require('connect-mongo');
-const cors = require('cors')
+const WebSocket = require("ws");
+const express = require("express");
+var ShareDB = require("sharedb/lib/client");
+const session = require("express-session");
+const { mongooseConnection } = require("./db/connectDB");
+const MongoStore = require("connect-mongo");
+const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
-const bodyParser = require('body-parser');
-const richText = require('rich-text');
-const { v4: uuidv4 } = require('uuid');
-const mime = require('mime');
+const bodyParser = require("body-parser");
+const richText = require("rich-text");
+const { v4: uuidv4 } = require("uuid");
+const mime = require("mime");
 
-var QuillDeltaToHtmlConverter = require('quill-delta-to-html').QuillDeltaToHtmlConverter;
-const { IS_PRODUCTION_MODE, PROD_IP, LOCAL_IP, GROUP_ID, websocketServer } = require('./common.js')
-const { adduser, login, logout, loginWithSession, verify } = require('./controllers/auth');
-const { Document } = require('./models/Document');
+var QuillDeltaToHtmlConverter =
+    require("quill-delta-to-html").QuillDeltaToHtmlConverter;
+const {
+    IS_PRODUCTION_MODE,
+    PROD_IP,
+    LOCAL_IP,
+    GROUP_ID,
+    websocketServer,
+} = require("./common.js");
+const {
+    adduser,
+    login,
+    logout,
+    loginWithSession,
+    verify,
+} = require("./controllers/auth");
+const { Document } = require("./models/Document");
 // const { getDocLists } = require('./controllers/documents');
 
 const PORT = IS_PRODUCTION_MODE ? 80 : 5001;
-const IP = IS_PRODUCTION_MODE ? PROD_IP : LOCAL_IP
+const IP = IS_PRODUCTION_MODE ? PROD_IP : LOCAL_IP;
 
 const sessionStore = new MongoStore({
     client: mongooseConnection.getClient(),
-    dbName: 'milestone2',
-    autoRemove: 'native'
-
+    dbName: "milestone2",
+    autoRemove: "native",
 });
 
-const app = express()
-app.use(session({
-    secret: "secret-key",
-    saveUninitialized: true,
-    resave: false,
-    store: sessionStore,
-    cookie: { secure: false },
-    expires: new Date(Date.now() + (1 * 86400 * 1000)) //expire 1 day
-})
-)
+const app = express();
+app.use(
+    session({
+        secret: "secret-key",
+        saveUninitialized: true,
+        resave: false,
+        store: sessionStore,
+        cookie: { secure: false },
+        expires: new Date(Date.now() + 1 * 86400 * 1000), //expire 1 day
+    })
+);
 
 //  app.get('*', (req, res) => {
 //     //     res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
 //     // });
 
 app.use(function (req, res, next) {
-    res.setHeader('X-CSE356', GROUP_ID);
+    res.setHeader("X-CSE356", GROUP_ID);
     next();
 });
-app.use(express.static(path.resolve(__dirname, '../client/build')));
+app.use(express.static(path.resolve(__dirname, "../client/build")));
 
-
-app.get('/home', (req, res) => {
-    console.log("ACCESSING... /home")
-    res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
+app.get("/home", (req, res) => {
+    console.log("ACCESSING... /home");
+    res.sendFile(path.resolve(__dirname, "../client/build", "index.html"));
 });
-app.get('/doc/edit/:docId', (req, res) => {
-    console.log("doc/edit/:docId")
-    res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
+app.get("/doc/edit/:docId", (req, res) => {
+    console.log("doc/edit/:docId");
+    res.sendFile(path.resolve(__dirname, "../client/build", "index.html"));
 });
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-
 if (IS_PRODUCTION_MODE) {
-    app.use(cors({ credentials: true }))
-
+    app.use(cors({ credentials: true }));
 } else {
     app.use(cors({ credentials: true, origin: true }));
 }
 
-
-
 app.get("/media/access/:id", (request, response, next) => {
-    console.log("WTF:", JSON.stringify(request.session))
+    console.log("WTF:", JSON.stringify(request.session));
     if (!request.session.user) {
-        response.json({ error: true, message: "Not logged in?????" + JSON.stringify(request.session) })
-        return
+        response.json({
+            error: true,
+            message: "Not logged in?????" + JSON.stringify(request.session),
+        });
+        return;
     }
 
     var fileName = request.params.id;
     response.setHeader("Content-Type", mime.getType(fileName));
-    console.log(`[MEDIA ACCESS]: ${fileName}`, `From ${request.session.user},  FileType: ${mime.getType(fileName)}`)
+    console.log(
+        `[MEDIA ACCESS]: ${fileName}`,
+        `From ${request.session.user},  FileType: ${mime.getType(fileName)}`
+    );
 
-    response.sendFile(path.join(__dirname, '/media/access/' + fileName))
+    response.sendFile(path.join(__dirname, "/media/access/" + fileName));
 });
-
 
 // const authRoutes = require("./routes/routes");
 // app.use(authRoutes)
@@ -93,35 +106,31 @@ app.get("/media/access/:id", (request, response, next) => {
 ShareDB.types.register(richText.type);
 // Connecting to our socket server
 const socket = new WebSocket(websocketServer);
-const connection = new ShareDB.Connection(socket)
-
-
+const connection = new ShareDB.Connection(socket);
 
 let docSessions = new Map();
-let names = new Map();
 // let localPresences = new Map();
 //EVENT STREAM
 function eventsHandler(request, response) {
     const headers = {
-        'Content-Type': 'text/event-stream',
-        'Connection': 'keep-alive',
-        'Cache-Control': 'no-cache',
-        'X-CSE356': GROUP_ID
+        "Content-Type": "text/event-stream",
+        Connection: "keep-alive",
+        "Cache-Control": "no-cache",
+        "X-CSE356": GROUP_ID,
     };
     response.writeHead(200, headers);
     if (!request.session.user) {
-        response.json({ error: true, message: "Not logged in" })
-        return
+        response.json({ error: true, message: "Not logged in" });
+        return;
     }
     const clientId = request.params.connectionId;
     const docId = request.params.docId;
 
     // if no active docsession, add to current doc session map
     if (!docSessions.has(docId)) {
-
-        const doc = connection.get('documents', docId);
+        const doc = connection.get("documents", docId);
         if (!doc.subscribed) {
-            console.log()
+            console.log();
             doc.subscribe(function (err) {
                 console.log("subscribed to ", docId);
                 if (err) throw err;
@@ -133,15 +142,12 @@ function eventsHandler(request, response) {
                 //     sendOpToAll(request, docId, source, delta);
 
                 // });
-
             });
         }
 
-
-
         docSessions.set(docId, {
             doc,
-            clients: new Set()
+            clients: new Set(),
         });
         console.log("docSessions.size", docSessions.size);
     }
@@ -156,13 +162,12 @@ function eventsHandler(request, response) {
         response,
     };
 
+    console.log("---------------------------------------------------");
+    console.log("---------------------------------------------------");
 
-
-    console.log("---------------------------------------------------")
-    console.log("---------------------------------------------------")
-
-    console.log(`[NEW CONNECTION] uid: ${request.session.user} | cid: ${clientId}`);
-
+    console.log(
+        `[NEW CONNECTION] uid: ${request.session.user} | cid: ${clientId}`
+    );
 
     //push if not exist
     let toAdd = true;
@@ -176,33 +181,41 @@ function eventsHandler(request, response) {
         clients.add(newClient);
     }
 
-
     // const newLocalPresence = presence.create(clientId);
     // newLocalPresence
     // localPresences.set(clientId, newLocalPresence);
-    console.log("[USERS] Currently Connected Users: ", Array.from(clients).map(i => "name: " + i.name + "| cid: " + i.id))
-    console.log("[USERS] Connected Users: ", clients.size)
-    console.log("---------------------------------------------------")
-    console.log("---------------------------------------------------")
+    console.log(
+        "[USERS] Currently Connected Users: ",
+        Array.from(clients).map((i) => "name: " + i.name + "| cid: " + i.id)
+    );
+    console.log("[USERS] Connected Users: ", clients.size);
+    console.log("---------------------------------------------------");
+    console.log("---------------------------------------------------");
 
-    //return the initial doc to the user. 
-    // note, we are only connecting the user..! 
+    //return the initial doc to the user.
+    // note, we are only connecting the user..!
     clients.forEach((cl) => {
         if (cl.id === clientId) {
             if (doc && doc.data && doc.data.ops) {
-                const ops = doc.data.ops
-                const formatted = { content: ops, version: doc.version }
-                console.log(`[DOC] Sending Out Initial Document Content & Version. \n data: ${JSON.stringify(formatted)}\n\n`)
-                response.write(`data: ${JSON.stringify(formatted)}\n\n`)
+                const ops = doc.data.ops;
+                const formatted = { content: ops, version: doc.version };
+                console.log(
+                    `[DOC] Sending Out Initial Document Content & Version. \n data: ${JSON.stringify(
+                        formatted
+                    )}\n\n`
+                );
+                response.write(`data: ${JSON.stringify(formatted)}\n\n`);
             }
         }
     });
-    request.on('close', () => {
+    request.on("close", () => {
         sendPresenceEventsToAll(request, docId, clientId, null);
         clients.delete(newClient);
 
         console.log(`${clientId} Connection closed`);
-        console.log(`[LOST CONNECTION] uid: ${request.session.user} | cid: ${clientId}`);
+        console.log(
+            `[LOST CONNECTION] uid: ${request.session.user} | cid: ${clientId}`
+        );
         if (clients.size === 0) {
             // doc.destroy();
             console.log(doc);
@@ -210,38 +223,43 @@ function eventsHandler(request, response) {
             // if (error) throw error;
             console.log("docSessions.size", docSessions.size);
             docSessions.delete(docId);
-            console.log("---------------------------------------------------")
-            console.log(`${docId} session is now removed from session map. `)
+            console.log("---------------------------------------------------");
+            console.log(`${docId} session is now removed from session map. `);
             console.log("docSessions.size", docSessions.size);
             // });
-
-        }
-        else {
-            console.log("---------------------------------------------------")
-            console.log("[USERS] Remaining Connected Users: ", Array.from(docSessions.get(docId).clients).map(i => "uid: " + i.name + "| cid: " + i.id))
-            console.log("[USERS] Updated Connected Users: ", docSessions.get(docId).clients.size)
-            console.log("---------------------------------------------------")
+        } else {
+            console.log("---------------------------------------------------");
+            console.log(
+                "[USERS] Remaining Connected Users: ",
+                Array.from(docSessions.get(docId).clients).map(
+                    (i) => "uid: " + i.name + "| cid: " + i.id
+                )
+            );
+            console.log(
+                "[USERS] Updated Connected Users: ",
+                docSessions.get(docId).clients.size
+            );
+            console.log("---------------------------------------------------");
         }
     });
 }
 
-
 function sendOpToAll(request, docId, connectionId, data) {
     if (!request.session.user) {
         ////response.setHeader('X-CSE356', GROUP_ID);
-        response.json({ error: true, message: "Not logged in" })
-        return
+        response.json({ error: true, message: "Not logged in" });
+        return;
     }
 
     const clients = docSessions.get(docId).clients;
     console.log("Broadcasting OPs to ", clients.size - 1);
     try {
-        clients.forEach(client => {
+        clients.forEach((client) => {
             if (client.id != connectionId) {
                 //send updates to all except the request sender
-                console.log("[OP] Sending OP TO: ", client.id)
-                client.response.write(`data: ${JSON.stringify(data)}\n\n`)
-                console.log(`data: ${JSON.stringify(data)}`)
+                console.log("[OP] Sending OP TO: ", client.id);
+                client.response.write(`data: ${JSON.stringify(data)}\n\n`);
+                console.log(`data: ${JSON.stringify(data)}`);
             }
             // else {
             //     const ackData = { "ack": data };
@@ -260,35 +278,36 @@ function sendOpToAll(request, docId, connectionId, data) {
         //         }
         //     });
         // }, 100);
-
-    }
-    catch (e) {
-        console.log(e)
+    } catch (e) {
+        console.log(e);
     }
 }
 
 function sendAck(request, docId, connectionId, data, version) {
     if (!request.session.user) {
         ////response.setHeader('X-CSE356', GROUP_ID);
-        response.json({ error: true, message: "Not logged in" })
-        return
+        response.json({ error: true, message: "Not logged in" });
+        return;
     }
     if (!docSessions.get(docId)) {
         return;
     }
     const clients = docSessions.get(docId).clients;
 
-    clients.forEach(client => {
+    clients.forEach((client) => {
         if (client.id == connectionId) {
-            const ackData = { "ack": data };
-            client.response.write(`data: ${JSON.stringify(ackData)}\n\n`)
-            console.log("[ACK] Sending TO (itself):", connectionId, "  [Version]: ", version)
-            console.log(`Ack Data: ${JSON.stringify(ackData.ack)}`)
+            const ackData = { ack: data };
+            client.response.write(`data: ${JSON.stringify(ackData)}\n\n`);
+            console.log(
+                "[ACK] Sending TO (itself):",
+                connectionId,
+                "  [Version]: ",
+                version
+            );
+            console.log(`Ack Data: ${JSON.stringify(ackData.ack)}`);
         }
     });
-
 }
-
 
 function sendPresenceEventsToAll(request, docId, connectionId, cursor) {
     console.log("[PRESENCE] Sending to all... FROM:", connectionId);
@@ -297,106 +316,107 @@ function sendPresenceEventsToAll(request, docId, connectionId, cursor) {
     }
     const clients = docSessions.get(docId).clients;
 
-    if (cursor)
-        cursor.name = request.session.user;
+    if (cursor) cursor.name = request.session.user;
     const data = {
-        "presence": {
-            "id": connectionId,
-            "cursor": cursor
-        }
-    }
-    console.log(JSON.stringify(data))
+        presence: {
+            id: connectionId,
+            cursor: cursor,
+        },
+    };
+    console.log(JSON.stringify(data));
 
     try {
-        clients.forEach(client => {
+        clients.forEach((client) => {
             if (client.id != connectionId) {
                 console.log("[PRESENCE] Sending... TO:", client.id);
-                client.response.write(`data: ${JSON.stringify(data)}\n\n`)
+                client.response.write(`data: ${JSON.stringify(data)}\n\n`);
                 // console.log(`data: ${JSON.stringify(presence)}`)
             }
         });
-    }
-    catch (e) {
-        console.log(e)
+    } catch (e) {
+        console.log(e);
     }
 }
 
-
-let flag = false
+let flag = false;
 function updateOps(request, response) {
     // { version, op }  { status }
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
-        response.json({ error: true, message: "Not logged in" })
-        return
+        response.json({ error: true, message: "Not logged in" });
+        return;
     }
 
     // setTimeout(() => {
     let connectionId = request.params.connectionId;
     let docId = request.params.docId;
-    let doc = connection.get('documents', docId);
+    let doc = connection.get("documents", docId);
     let content = request.body.op;
     let version = request.body.version;
-    console.log("******************************************")
-    console.log("******************************************")
+    console.log("******************************************");
+    console.log("******************************************");
 
-    console.log("VERSION OP : ", version, "VERSION DOC : ", doc.version)
+    console.log("VERSION OP : ", version, "VERSION DOC : ", doc.version);
     console.log("FROM: ", JSON.stringify(connectionId));
     console.log("CONTENT: ", JSON.stringify(content));
-    console.log("------------------------------------------")
-
+    console.log("------------------------------------------");
 
     if (version < doc.version) {
         console.log("Sending retry back");
-        response.json({ status: 'retry' });
-        response.end()
-        return
+        response.json({ status: "retry" });
+        response.end();
+        return;
     } else if (version == doc.version) {
-        console.log("Version Ok. Preparing to submit doc...")
+        console.log("Version Ok. Preparing to submit doc...");
 
         if (flag) {
             console.log("[ERROR] Doc is busy. Sending retry back");
-            response.json({ status: 'retry' });
-            response.end()
-            return
-
+            response.json({ status: "retry" });
+            response.end();
+            return;
         } else {
+            flag = true;
+            doc.submitOp(content, { source: connectionId }, (err) => {
+                if (err) {
+                    console.log(
+                        "Unable to submit OP to sharedb: ",
+                        JSON.stringify(err)
+                    );
+                    // response.setHeader('X-CSE356', GROUP_ID);
+                    response.json({
+                        error: true,
+                        message: "Failed to update ops",
+                    });
+                    response.end();
+                    return;
+                    // EDIT THE VERSIONS
+                } else {
+                    console.log(
+                        "OP Submission to Sharedb Complete. From: ",
+                        connectionId,
+                        "Version: ",
+                        version
+                    );
+                    console.log("Content: ", content);
+                    console.log("Preparing to send acknowledgement back...");
+                    sendOpToAll(request, docId, connectionId, content);
+                    sendAck(request, docId, connectionId, content, version);
 
-            flag = true
-            doc.submitOp(content, { source: connectionId },
-                (err) => {
-                    if (err) {
-                        console.log("Unable to submit OP to sharedb: ", JSON.stringify(err))
-                        // response.setHeader('X-CSE356', GROUP_ID);
-                        response.json({
-                            error: true,
-                            message: "Failed to update ops"
-                        });
-                        response.end()
-                        return
-                        // EDIT THE VERSIONS
-                    } else {
-                        console.log("OP Submission to Sharedb Complete. From: ", connectionId, "Version: ", version)
-                        console.log("Content: ", content);
-                        console.log("Preparing to send acknowledgement back...");
-                        sendOpToAll(request, docId, connectionId, content);
-                        sendAck(request, docId, connectionId, content, version);
-
-                        flag = false
-                        response.json({ status: 'ok' })
-                        response.end()
-                        return
-                    }
-                });
+                    flag = false;
+                    response.json({ status: "ok" });
+                    response.end();
+                    return;
+                }
+            });
         }
     } else {
-        console.log("[VERSION ERROR]: Client is ahead of server")
+        console.log("[VERSION ERROR]: Client is ahead of server");
         response.json({
             error: true,
-            message: "Client is ahead of server "
+            message: "Client is ahead of server ",
         });
-        response.end()
-        return
+        response.end();
+        return;
     }
     // }, 0);
 }
@@ -404,10 +424,10 @@ function updateOps(request, response) {
 function updateCursor(request, response) {
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
-        response.json({ error: true, message: "Not logged in" })
-        return
+        response.json({ error: true, message: "Not logged in" });
+        return;
     }
-    const connectionId = request.params.connectionId
+    const connectionId = request.params.connectionId;
     const docId = request.params.docId;
 
     const doc = docSessions.get(docId).doc;
@@ -433,107 +453,107 @@ function updateCursor(request, response) {
     //         // EDIT THE VERSIONS
     //     }
     // })
-    response.json({})
-    response.end()
-    return
+    response.json({});
+    response.end();
+    return;
 }
-
 
 function createDoc(request, response) {
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
-        response.json({ error: true, message: "Not logged in" })
-        return
+        response.json({ error: true, message: "Not logged in" });
+        return;
     }
 
     const name = request.body.name;
-    const docid = uuidv4();
-    names.set(docid, name);
-    console.log('docId: ' + docid)
-    const doc = connection.get('documents', docid);
+    const docid = uuidv4() + ":" + name;
+    console.log("docId: " + docid);
+    const doc = connection.get("documents", docid);
     doc.fetch(function (err) {
-        response.setHeader('X-CSE356', GROUP_ID);
+        response.setHeader("X-CSE356", GROUP_ID);
 
         if (err) {
-
             response.json({ error: true, message: "Error: createDoc" });
             throw err;
         }
         if (doc.type === null) {
             // doc.create({name: name});
-            doc.create([], 'rich-text', function (error) {
+            doc.create([], "rich-text", function (error) {
                 if (error) throw error;
                 console.log("Document is created and sending docId back");
                 // response.writeHead(200, headers);
                 response.json({ docid }); //
             });
         }
-    })
+    });
 }
-
-
 
 function deleteDoc(request, response) {
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
-        response.json({ error: true, message: "Not logged in" })
-        return
+        response.json({ error: true, message: "Not logged in" });
+        return;
     }
-
-
 
     const docId = request.body.docid;
 
-    console.log('deleting docId: ' + docId)
+    console.log("deleting docId: " + docId);
     // let doc = docSessions.get(docId).doc;
     // if (doc === undefined)
     Document.findOne({ _id: docId }).exec((err, document) => {
         if (err) {
-            response.json({ error: true, message: "Error in fetching data from db" })
-            return
+            response.json({
+                error: true,
+                message: "Error in fetching data from db",
+            });
+            return;
+        } else if (!document) {
+            response.json({
+                error: true,
+                message: "No user with corresponding docid",
+            });
+            return;
         }
-        else if (!document) {
-            response.json({ error: true, message: "No user with corresponding docid" })
-            return
-        }
-    })
+    });
 
-    const doc = connection.get('documents', docId);
+    const doc = connection.get("documents", docId);
     doc.del({}, function (error) {
         // response.setHeader('X-CSE356', GROUP_ID);
         if (error) {
             response.json({
                 error: true,
-                message: "Failed to delete document"
-
+                message: "Failed to delete document",
             });
             throw error;
-            return
+            return;
         }
         docSessions.delete(docId);
-        names.delete(docId);
         Document.deleteOne({ _id: docId }).exec((err) => {
             if (err) {
-                response.json({ error: true, message: "Cannot delete the document from mongodb" })
+                response.json({
+                    error: true,
+                    message: "Cannot delete the document from mongodb",
+                });
             }
-        })
-        response.json({ status: "ok", message: "Successfully deleted the document: " + docId }); //
-    })
-
+        });
+        response.json({
+            status: "ok",
+            message: "Successfully deleted the document: " + docId,
+        }); //
+    });
 }
-
 
 function sendHtml(request, response) {
     //response.setHeader('X-CSE356', GROUP_ID);
 
     if (!request.session.user) {
-        response.json({ error: true, message: "Not logged in" })
-        return
+        response.json({ error: true, message: "Not logged in" });
+        return;
     }
 
     const clientId = request.params.connectionId;
     const docId = request.params.docId;
-    const doc = connection.get('documents', docId);
+    const doc = connection.get("documents", docId);
 
     doc.fetch(function (error) {
         if (error) throw error;
@@ -542,26 +562,24 @@ function sendHtml(request, response) {
         console.log(html);
         response.send(html);
     });
-
 }
-
-
-
-
 
 function getDocLists(req, res) {
     //response.setHeader('X-CSE356', GROUP_ID);
-    console.log(req.session.user)
+    console.log(req.session.user);
     if (!req.session.user) {
-        res.json({ error: true, message: "Not logged in" })
-        return
+        res.json({ error: true, message: "Not logged in" });
+        return;
     }
-    connection.createFetchQuery('documents', {
-        $sort: { '_m.mtime': -1 }, $limit: 10,
-    }, {},
+    connection.createFetchQuery(
+        "documents",
+        {
+            $sort: { "_m.mtime": -1 },
+            $limit: 10,
+        },
+        {},
         (error, results) => {
             // results is an array of Doc instances with their data populated
-
 
             if (error) {
                 res.json({ error: true, message: "Error in getting doc list" });
@@ -571,27 +589,25 @@ function getDocLists(req, res) {
             console.log(`Document Lists size : \n ${results.length}`);
             const formatted = results.map((doc) => ({
                 id: doc.id,
-                name: names.get(doc.id)
-            }))
+                name: doc.id.split(":")[1],
+            }));
             res.json(formatted);
         }
     );
-
 }
-
-
 
 //img uploads---------------------------------
 
 const storage = multer.diskStorage({
     destination: path.join("./media/access"),
     filename: function (req, file, cb) {
-        if (file.mimetype == 'image/png' || file.mimetype == 'image/jpeg') {
+        if (file.mimetype == "image/png" || file.mimetype == "image/jpeg") {
             imageName = Date.now() + path.extname(file.originalname);
             return cb(null, imageName);
-        }
-        else {
-            return cb(new Error('Invalid Mimetype! Received ' + file.mimetype, false));
+        } else {
+            return cb(
+                new Error("Invalid Mimetype! Received " + file.mimetype, false)
+            );
         }
     },
 });
@@ -604,8 +620,8 @@ const upload = multer({
 function uploadImage(req, res) {
     if (!req.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
-        res.json({ error: true, message: "Not logged in" })
-        return
+        res.json({ error: true, message: "Not logged in" });
+        return;
     }
 
     console.log("Image Request coming from client");
@@ -613,41 +629,41 @@ function uploadImage(req, res) {
         //response.setHeader('X-CSE356', GROUP_ID);
 
         if (err) {
-            res.json({ error: true, message: err.message })
+            res.json({ error: true, message: err.message });
             console.log("[IMAGE]: Invalid MimeType Error Sent to Client");
         } else {
-            console.log("[IMAGE]: URL returned to client.")
-            const url = `http://${IP}:${PORT}/media/access/${imageName}`
+            console.log("[IMAGE]: URL returned to client.");
+            const url = `http://${IP}:${PORT}/media/access/${imageName}`;
 
-            console.log(url)
-
+            console.log(url);
 
             res.setHeader("Content-Type", mime.getType(url));
             return res.status(201).json({ mediaid: imageName });
         }
     });
-};
+}
 
+app.get("/doc/connect/:docId/:connectionId", eventsHandler);
+app.post("/doc/presence/:docId/:connectionId", updateCursor);
+app.get("/doc/get/:docId/:connectionId", sendHtml);
 
+app.post("/collection/create", createDoc);
+app.post("/collection/delete", deleteDoc);
+app.get("/collection/list", getDocLists);
 
-app.get('/doc/connect/:docId/:connectionId', eventsHandler);
-app.post('/doc/presence/:docId/:connectionId', updateCursor);
-app.get('/doc/get/:docId/:connectionId', sendHtml);
-
-app.post('/collection/create', createDoc)
-app.post('/collection/delete', deleteDoc)
-app.get('/collection/list', getDocLists);
-
-app.post('/doc/op/:docId/:connectionId', updateOps);
+app.post("/doc/op/:docId/:connectionId", updateOps);
 app.post("/media/upload", uploadImage);
-app.post('/users/signup', adduser)
-app.post('/users/login', login)
-app.get('/users/logout', logout)
-app.get('/users/verify', verify)
-
+app.post("/users/signup", adduser);
+app.post("/users/login", login);
+app.get("/users/logout", logout);
+app.get("/users/verify", verify);
 
 if (IS_PRODUCTION_MODE) {
-    app.listen(PORT, IP, () => console.log(`CSE356 Milestone 2: listening on port ${PORT}`))
+    app.listen(PORT, IP, () =>
+        console.log(`CSE356 Milestone 2: listening on port ${PORT}`)
+    );
 } else {
-    app.listen(PORT, IP, () => console.log(`CSE356 Milestone 2: listening on port ${PORT}`))
+    app.listen(PORT, IP, () =>
+        console.log(`CSE356 Milestone 2: listening on port ${PORT}`)
+    );
 }

@@ -1,4 +1,4 @@
-const IS_PRODUCTION_MODE = false;
+const IS_PRODUCTION_MODE = true;
 // make above true for deploying
 
 export const backendURL = IS_PRODUCTION_MODE

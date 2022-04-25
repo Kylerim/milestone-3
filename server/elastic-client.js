@@ -77,12 +77,26 @@ app.get("/index/search", async (req, res) => {
     const result = await client.search({
         index: "documents",
         query: {
-            match: { content: query },
+            multi_match: {
+                query: query,
+                fields: ["title^2", "content"],
+            },
+        },
+        highlight: {
+            fields: {
+                content: {},
+            },
         },
     });
-    res.json({
-        result: result.hits,
+
+    const toSend = result.hits.hits.map((doc) => {
+        return {
+            id: doc._id,
+            name: doc._source.title,
+            snippet: doc.highlight.content,
+        };
     });
+    res.json(toSend);
 });
 
 app.get("/index/suggest", async (req, res) => {

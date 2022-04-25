@@ -109,6 +109,7 @@ const socket = new WebSocket(websocketServer);
 const connection = new ShareDB.Connection(socket);
 
 let docSessions = new Map();
+let names = new Map();
 
 //EVENT STREAM
 function eventsHandler(request, response) {
@@ -564,7 +565,9 @@ function createDoc(request, response) {
     }
 
     const name = request.body.name;
-    const docid = uuidv4() + ":" + name;
+    const docid = uuidv4();
+    names.set(docid, name);
+
     console.log("docId: " + docid);
     const doc = connection.get("documents", docid);
     doc.fetch(function (err) {
@@ -626,6 +629,8 @@ function deleteDoc(request, response) {
             return;
         }
         docSessions.delete(docId);
+        names.delete(docId);
+
         Document.deleteOne({ _id: docId }).exec((err) => {
             if (err) {
                 response.json({
@@ -687,7 +692,8 @@ function getDocLists(req, res) {
             console.log(`Document Lists size : \n ${results.length}`);
             const formatted = results.map((doc) => ({
                 id: doc.id,
-                name: doc.id.split(":")[1],
+                // name: doc.id.split(":")[1],
+                name: names.get(doc.id),
             }));
             res.json(formatted);
         }

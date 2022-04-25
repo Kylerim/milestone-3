@@ -11,6 +11,9 @@ const bodyParser = require("body-parser");
 const richText = require("rich-text");
 const { v4: uuidv4 } = require("uuid");
 const mime = require("mime");
+const async = require("async");
+
+// create a new queue, and pass how many you want to scrape at once
 
 var QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
@@ -100,16 +103,14 @@ app.get("/media/access/:id", (request, response, next) => {
     response.sendFile(path.join(__dirname, "/media/access/" + fileName));
 });
 
-// const authRoutes = require("./routes/routes");
-// app.use(authRoutes)
-
+//ShareDB Connection
 ShareDB.types.register(richText.type);
-// Connecting to our socket server
 const socket = new WebSocket(websocketServer);
 const connection = new ShareDB.Connection(socket);
 
 let docSessions = new Map();
-// let localPresences = new Map();
+let names = new Map();
+
 //EVENT STREAM
 function eventsHandler(request, response) {
     const headers = {
@@ -338,7 +339,107 @@ function sendPresenceEventsToAll(request, docId, connectionId, cursor) {
     }
 }
 
-let flag = false;
+// let flag = false;
+
+const queue = async.queue(({ request, response }, completed) => {
+    console.log(
+        "Currently Busy Processing Task " + request.params.connectionId
+    );
+    // updateOps(request, response);
+    const remaining = queue.length();
+
+    if (!request.session.user) {
+        //response.setHeader('X-CSE356', GROUP_ID);
+        response.json({ error: true, message: "Not logged in" });
+        return;
+    }
+
+    let connectionId = request.params.connectionId;
+    let docId = request.params.docId;
+    let doc = connection.get("documents", docId);
+    let content = request.body.op;
+    let version = request.body.version;
+    console.log("******************************************");
+    console.log("******************************************");
+
+    console.log("VERSION OP : ", version, "VERSION DOC : ", doc.version);
+    console.log("FROM: ", JSON.stringify(connectionId));
+    console.log("CONTENT: ", JSON.stringify(content));
+    console.log("------------------------------------------");
+
+    if (version < doc.version) {
+        console.log("Sending retry back");
+        completed(null, { connectionId, remaining });
+        response.json({ status: "retry" });
+        response.end();
+        return;
+    } else if (version == doc.version) {
+        console.log("Version Ok. Preparing to submit doc...");
+
+        // if (flag) {
+        //     console.log("[ERROR] Doc is busy. Sending retry back");
+        //     response.json({ status: "retry" });
+        //     response.end();
+        //     return;
+        // } else {
+        //     flag = true;
+        doc.submitOp(content, { source: connectionId }, (err) => {
+            if (err) {
+                console.log(
+                    "Unable to submit OP to sharedb: ",
+                    JSON.stringify(err)
+                );
+                // response.setHeader('X-CSE356', GROUP_ID);
+                response.json({
+                    error: true,
+                    message: "Failed to update ops",
+                });
+                response.end();
+                return;
+                // EDIT THE VERSIONS
+            } else {
+                console.log(
+                    "OP Submission to Sharedb Complete. From: ",
+                    connectionId,
+                    "Version: ",
+                    version
+                );
+                console.log("Content: ", content);
+                console.log("Preparing to send acknowledgement back...");
+                sendOpToAll(request, docId, connectionId, content);
+                sendAck(request, docId, connectionId, content, version);
+                completed(null, { connectionId, remaining });
+                // flag = false;
+                response.json({ status: "ok" });
+                response.end();
+                return;
+            }
+        });
+        //   }
+    } else {
+        console.log("[VERSION ERROR]: Client is ahead of server");
+        response.json({
+            error: true,
+            message: "Client is ahead of server ",
+        });
+        response.end();
+        return;
+    }
+
+    // const connectionId = request.params.connectionId;
+}, 1);
+
+function handleUpdateOpsQueue(request, response) {
+    queue.push({ request, response }, (error, { connectionId, remaining }) => {
+        if (error) {
+            console.log(`An error occurred while processing task ${task}`);
+        } else {
+            console.log(`Finished processing task ${connectionId}
+                   . ${remaining} tasks remaining`);
+        }
+    });
+}
+
 function updateOps(request, response) {
     // { version, op }  { status }
     if (!request.session.user) {
@@ -347,7 +448,6 @@ function updateOps(request, response) {
         return;
     }
 
-    // setTimeout(() => {
     let connectionId = request.params.connectionId;
     let docId = request.params.docId;
     let doc = connection.get("documents", docId);
@@ -369,46 +469,46 @@ function updateOps(request, response) {
     } else if (version == doc.version) {
         console.log("Version Ok. Preparing to submit doc...");
 
-        if (flag) {
-            console.log("[ERROR] Doc is busy. Sending retry back");
-            response.json({ status: "retry" });
-            response.end();
-            return;
-        } else {
-            flag = true;
-            doc.submitOp(content, { source: connectionId }, (err) => {
-                if (err) {
-                    console.log(
-                        "Unable to submit OP to sharedb: ",
-                        JSON.stringify(err)
-                    );
-                    // response.setHeader('X-CSE356', GROUP_ID);
-                    response.json({
-                        error: true,
-                        message: "Failed to update ops",
-                    });
-                    response.end();
-                    return;
-                    // EDIT THE VERSIONS
-                } else {
-                    console.log(
-                        "OP Submission to Sharedb Complete. From: ",
-                        connectionId,
-                        "Version: ",
-                        version
-                    );
-                    console.log("Content: ", content);
-                    console.log("Preparing to send acknowledgement back...");
-                    sendOpToAll(request, docId, connectionId, content);
-                    sendAck(request, docId, connectionId, content, version);
+        // if (flag) {
+        //     console.log("[ERROR] Doc is busy. Sending retry back");
+        //     response.json({ status: "retry" });
+        //     response.end();
+        //     return;
+        // } else {
+        //     flag = true;
+        doc.submitOp(content, { source: connectionId }, (err) => {
+            if (err) {
+                console.log(
+                    "Unable to submit OP to sharedb: ",
+                    JSON.stringify(err)
+                );
+                // response.setHeader('X-CSE356', GROUP_ID);
+                response.json({
+                    error: true,
+                    message: "Failed to update ops",
+                });
+                response.end();
+                return;
+                // EDIT THE VERSIONS
+            } else {
+                console.log(
+                    "OP Submission to Sharedb Complete. From: ",
+                    connectionId,
+                    "Version: ",
+                    version
+                );
+                console.log("Content: ", content);
+                console.log("Preparing to send acknowledgement back...");
+                sendOpToAll(request, docId, connectionId, content);
+                sendAck(request, docId, connectionId, content, version);
 
-                    flag = false;
-                    response.json({ status: "ok" });
-                    response.end();
-                    return;
-                }
-            });
-        }
+                // flag = false;
+                response.json({ status: "ok" });
+                response.end();
+                return;
+            }
+        });
+        //   }
     } else {
         console.log("[VERSION ERROR]: Client is ahead of server");
         response.json({
@@ -418,7 +518,6 @@ function updateOps(request, response) {
         response.end();
         return;
     }
-    // }, 0);
 }
 
 function updateCursor(request, response) {
@@ -466,7 +565,9 @@ function createDoc(request, response) {
     }
 
     const name = request.body.name;
-    const docid = uuidv4() + "-" + name;
+    const docid = uuidv4();
+    names.set(docid, name);
+
     console.log("docId: " + docid);
     const doc = connection.get("documents", docid);
     doc.fetch(function (err) {
@@ -528,6 +629,8 @@ function deleteDoc(request, response) {
             return;
         }
         docSessions.delete(docId);
+        names.delete(docId);
+
         Document.deleteOne({ _id: docId }).exec((err) => {
             if (err) {
                 response.json({
@@ -589,7 +692,8 @@ function getDocLists(req, res) {
             console.log(`Document Lists size : \n ${results.length}`);
             const formatted = results.map((doc) => ({
                 id: doc.id,
-                name: doc.id.split("-")[doc.id.split("-").length - 1],
+                // name: doc.id.split(":")[1],
+                name: names.get(doc.id),
             }));
             res.json(formatted);
         }
@@ -601,7 +705,11 @@ function getDocLists(req, res) {
 const storage = multer.diskStorage({
     destination: path.join("./media/access"),
     filename: function (req, file, cb) {
-        if (file.mimetype == "image/png" || file.mimetype == "image/jpeg") {
+        if (
+            file.mimetype == "image/png" ||
+            file.mimetype == "image/jpeg" ||
+            file.mimetype == "image/gif"
+        ) {
             imageName = Date.now() + path.extname(file.originalname);
             return cb(null, imageName);
         } else {
@@ -651,7 +759,7 @@ app.post("/collection/create", createDoc);
 app.post("/collection/delete", deleteDoc);
 app.get("/collection/list", getDocLists);
 
-app.post("/doc/op/:docId/:connectionId", updateOps);
+app.post("/doc/op/:docId/:connectionId", handleUpdateOpsQueue);
 app.post("/media/upload", uploadImage);
 app.post("/users/signup", adduser);
 app.post("/users/login", login);

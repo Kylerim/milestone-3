@@ -100,16 +100,13 @@ app.get("/media/access/:id", (request, response, next) => {
     response.sendFile(path.join(__dirname, "/media/access/" + fileName));
 });
 
-// const authRoutes = require("./routes/routes");
-// app.use(authRoutes)
-
+//ShareDB Connection
 ShareDB.types.register(richText.type);
-// Connecting to our socket server
 const socket = new WebSocket(websocketServer);
 const connection = new ShareDB.Connection(socket);
 
 let docSessions = new Map();
-// let localPresences = new Map();
+
 //EVENT STREAM
 function eventsHandler(request, response) {
     const headers = {
@@ -347,7 +344,6 @@ function updateOps(request, response) {
         return;
     }
 
-    // setTimeout(() => {
     let connectionId = request.params.connectionId;
     let docId = request.params.docId;
     let doc = connection.get("documents", docId);
@@ -418,7 +414,6 @@ function updateOps(request, response) {
         response.end();
         return;
     }
-    // }, 0);
 }
 
 function updateCursor(request, response) {
@@ -601,7 +596,11 @@ function getDocLists(req, res) {
 const storage = multer.diskStorage({
     destination: path.join("./media/access"),
     filename: function (req, file, cb) {
-        if (file.mimetype == "image/png" || file.mimetype == "image/jpeg") {
+        if (
+            file.mimetype == "image/png" ||
+            file.mimetype == "image/jpeg" ||
+            file.mimetype == "image/gif"
+        ) {
             imageName = Date.now() + path.extname(file.originalname);
             return cb(null, imageName);
         } else {

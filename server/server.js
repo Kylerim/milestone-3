@@ -564,7 +564,7 @@ function createDoc(request, response) {
     }
 
     const name = request.body.name;
-    const docid = uuidv4() + "-" + name;
+    const docid = uuidv4() + ":" + name;
     console.log("docId: " + docid);
     const doc = connection.get("documents", docid);
     doc.fetch(function (err) {
@@ -687,7 +687,7 @@ function getDocLists(req, res) {
             console.log(`Document Lists size : \n ${results.length}`);
             const formatted = results.map((doc) => ({
                 id: doc.id,
-                name: doc.id.split("-")[doc.id.split("-").length - 1],
+                name: doc.id.split(":")[1],
             }));
             res.json(formatted);
         }

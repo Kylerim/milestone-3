@@ -78,7 +78,7 @@ exports.searchIndex = async (req, res) => {
             },
         },
     });
-    console.log(doc.highlight);
+    console.log(result.hits.hits);
     const toSend = result.hits.hits.map((doc) => {
         return {
             id: doc._id,

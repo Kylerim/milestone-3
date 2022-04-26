@@ -257,7 +257,13 @@ function sendOpToAll(request, docId, connectionId, data) {
         response.json({ error: true, message: "Not logged in" });
         return;
     }
-
+    if (!docSessions.get(docId)) {
+        response.json({
+            error: true,
+            message: "Document does not exit anymore",
+        });
+        return;
+    }
     const clients = docSessions.get(docId).clients;
     console.log("Broadcasting OPs to ", clients.size - 1);
     try {
@@ -297,6 +303,10 @@ function sendAck(request, docId, connectionId, data, version) {
         return;
     }
     if (!docSessions.get(docId)) {
+        response.json({
+            error: true,
+            message: "Document does not exit anymore",
+        });
         return;
     }
     const clients = docSessions.get(docId).clients;
@@ -319,6 +329,13 @@ function sendAck(request, docId, connectionId, data, version) {
 function sendPresenceEventsToAll(request, docId, connectionId, cursor) {
     console.log("[PRESENCE] Sending to all... FROM:", connectionId);
     if (!docSessions.get(docId)) {
+        return;
+    }
+    if (!docSessions.get(docId)) {
+        response.json({
+            error: true,
+            message: "Document does not exit anymore",
+        });
         return;
     }
     const clients = docSessions.get(docId).clients;

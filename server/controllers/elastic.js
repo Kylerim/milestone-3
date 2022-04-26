@@ -1,7 +1,7 @@
 const { Client } = require("@elastic/elasticsearch");
 const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("../common.js");
 
-const toPlaintext = require("quill-delta-to-plaintext").toPlaintext;
+const toPlaintext = require("quill-delta-to-plaintext");
 const client = new Client({
     node: "http://localhost:9200",
     auth: {

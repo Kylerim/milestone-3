@@ -365,7 +365,10 @@ const queue = async.queue(({ request, response }, completed) => {
     let content = request.body.op;
     let version = request.body.version;
 
-    if (Math.abs(version - docSessions.get(docId).elasticVersion) > 20) {
+    if (
+        docSessions.has(docId) &&
+        Math.abs(version - docSessions.get(docId).elasticVersion) > 5
+    ) {
         console.log(
             "Version of elastic: ",
             docSessions.get(docId).elasticVersion,

@@ -4,12 +4,16 @@ import {
     endpointDocList,
     endpointCreateDoc,
     endpointDeleteDoc,
+    endpointSearch,
+    endpointSuggest,
 } from "../Common";
 
 function Home() {
     const [docList, setDocList] = useState([]);
     const [docName, setDocName] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
+    const [suggestQuery, setSuggestQuery] = useState("");
+
     const fetchdocList = async () => {
         console.log("Fetching doc list...");
         const response = await fetch(endpointDocList, {
@@ -38,7 +42,6 @@ function Home() {
                 "Content-Type": "application/json",
             },
 
-            //check piazza data type...
             body: JSON.stringify(sendData),
             credentials: "include",
         });
@@ -59,8 +62,6 @@ function Home() {
                 Accept: "application/json",
                 "Content-Type": "application/json",
             },
-
-            //check piazza data type...
             body: JSON.stringify(sendData),
             credentials: "include",
         });
@@ -69,6 +70,32 @@ function Home() {
         fetchdocList();
 
         console.log("Updating the list of documents: ", docList);
+    };
+
+    const handleSearchRequest = async () => {
+        console.log("handleSearchRequest");
+        const response = await fetch(endpointSearch + `/${searchQuery}`, {
+            method: "GET",
+            headers: {
+                Accept: "application/json",
+            },
+            credentials: "include",
+        });
+        const data = await response.json();
+        console.log("HandleSearchRequest for: ", searchQuery, data);
+    };
+
+    const handleSuggestRequest = async () => {
+        console.log("handleSuggestRequest");
+        const response = await fetch(endpointSuggest + `/${suggestQuery}`, {
+            method: "GET",
+            headers: {
+                Accept: "application/json",
+            },
+            credentials: "include",
+        });
+        const data = await response.json();
+        console.log("HandleSuggestRequest for: ", suggestQuery, data);
     };
 
     useEffect(() => {
@@ -88,12 +115,29 @@ function Home() {
             />
             <button
                 onClick={() => {
-                    alert("Searching");
+                    handleSearchRequest();
                 }}
             >
                 Search
             </button>
 
+            <br></br>
+
+            <input
+                onChange={(e) => {
+                    setSuggestQuery(e.target.value);
+                }}
+                required
+            />
+            <button
+                onClick={() => {
+                    handleSuggestRequest();
+                }}
+            >
+                Suggest (Autocomplete)
+            </button>
+
+            <br></br>
             <br></br>
             <br></br>
             <br></br>

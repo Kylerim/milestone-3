@@ -74,7 +74,7 @@ function Home() {
 
     const handleSearchRequest = async () => {
         console.log("handleSearchRequest");
-        const response = await fetch(endpointSearch + `/${searchQuery}`, {
+        const response = await fetch(endpointSearch + `?q=${searchQuery}`, {
             method: "GET",
             headers: {
                 Accept: "application/json",
@@ -87,7 +87,7 @@ function Home() {
 
     const handleSuggestRequest = async () => {
         console.log("handleSuggestRequest");
-        const response = await fetch(endpointSuggest + `/${suggestQuery}`, {
+        const response = await fetch(endpointSuggest + `?q=${suggestQuery}`, {
             method: "GET",
             headers: {
                 Accept: "application/json",

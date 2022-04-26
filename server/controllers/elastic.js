@@ -78,12 +78,12 @@ exports.searchIndex = async (req, res) => {
             },
         },
     });
-
+    console.log(doc.highlight);
     const toSend = result.hits.hits.map((doc) => {
         return {
             id: doc._id,
             name: doc._source.title,
-            snippet: doc.highlight.content,
+            snippet: doc.highlight.content || [],
         };
     });
     res.json(toSend);

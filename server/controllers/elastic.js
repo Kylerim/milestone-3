@@ -101,15 +101,28 @@ exports.suggestIndex = async (req, res) => {
     const result = await client.search({
         index: "documents",
         suggest: {
-            gotsuggest: {
+            suggester: {
                 text: query,
-                term: { field: "content", suggest_mode: "always" },
+                term: {
+                    field: content,
+                    suggest_mode: always,
+                    prefix_length: query.length,
+                    min_word_length: query.length,
+                    string_distance: "ngram",
+                    sort: "frequency",
+                },
             },
         },
     });
-    res.json({
-        result,
+    console.log(result.suggest.suggester);
+    const toSend = result.suggest.suggester[0].options.map((doc) => {
+        return {
+            id: doc._id,
+            name: doc._source.title,
+            snippet: doc.highlight.content || [],
+        };
     });
+    res.json(toSend);
 };
 
 // curl -X PUT "localhost:9200/documents?pretty" -H 'Content-Type: application/json' -d'
@@ -124,3 +137,20 @@ exports.suggestIndex = async (req, res) => {
 //   }
 // }
 // '
+
+// POST documents/_search
+// {
+//   "suggest": {
+//     "suggester" : {
+//       "text": "ston",
+//       "term" : {
+//         "field" : "content",
+//         "suggest_mode": "always",
+//         "prefix_length": 3,
+//         "min_word_length": 3,
+//         "string_distance": "ngram",
+//         "sort": "frequency"
+//       }
+//     }
+//   }
+// }

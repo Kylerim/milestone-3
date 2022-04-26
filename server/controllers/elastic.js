@@ -2,7 +2,8 @@ const { Client } = require("@elastic/elasticsearch");
 const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("../common.js");
 const QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
-const toPlaintext = require("quill-delta-to-plaintext");
+
+const { convert } = require("html-to-text");
 const client = new Client({
     node: "http://localhost:9200",
     auth: {
@@ -35,7 +36,10 @@ exports.deleteIndex = async function (id) {
 
 exports.updateIndex = async function (id, delta) {
     let converter = new QuillDeltaToHtmlConverter(delta, {});
-    let content = converter.convert();
+    let html = converter.convert();
+    const content = convert(html, {
+        wordwrap: null,
+    });
     // const content = toPlaintext(delta);
     console.log("Updating content", content);
     const result = await client.update({
@@ -70,6 +74,7 @@ exports.searchIndex = async (req, res) => {
         highlight: {
             fields: {
                 content: {},
+                title: {},
             },
         },
     });

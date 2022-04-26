@@ -120,6 +120,18 @@ app.listen(PORT, PROD_IP, () =>
     console.log(`CSE356 Milestone 3: listening on port ${PORT}`)
 );
 
+// curl -X PUT "localhost:9200/documents?pretty" -H 'Content-Type: application/json' -d'
+// {
+//   "settings": {
+//     "number_of_shards": 1
+//   },
+//   "mappings": {
+//     "properties": {
+//       "title": { "type": "text", "analyzer":"english" }, "content": {"type": "text", "analyzer": "english"}
+//     }
+//   }
+// }
+// '
 // async function run() {
 //     // Let's start by indexing some data
 //     await client.index({

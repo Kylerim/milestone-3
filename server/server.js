@@ -153,7 +153,7 @@ function eventsHandler(request, response) {
 
         docSessions.set(docId, {
             doc,
-            elasticVersion : doc.version,
+            elasticVersion: doc.version,
             clients: new Set(),
         });
         console.log("docSessions.size", docSessions.size);
@@ -364,9 +364,14 @@ const queue = async.queue(({ request, response }, completed) => {
     let doc = connection.get("documents", docId);
     let content = request.body.op;
     let version = request.body.version;
-    
-    if(Math.abs(version - (docSessions.get(docId).elasticVersion)) > 20) {
-        console.log("Version of elastic: ",docSessions.get(docId).elasticVersion, " Version:", version );
+
+    if (Math.abs(version - docSessions.get(docId).elasticVersion) > 20) {
+        console.log(
+            "Version of elastic: ",
+            docSessions.get(docId).elasticVersion,
+            " Version:",
+            version
+        );
         docSessions.get(docId).elasticVersion = version;
         updateIndex(docId, doc.data.ops);
     }
@@ -522,7 +527,7 @@ async function createDoc(request, response) {
     });
 }
 
-function deleteDoc(request, response) {
+async function deleteDoc(request, response) {
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
         response.json({ error: true, message: "Not logged in" });

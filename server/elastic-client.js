@@ -1,7 +1,7 @@
 const { Client } = require("@elastic/elasticsearch");
 const express = require("express");
 const bodyParser = require("body-parser");
-const { PROD_IP, PORT, GROUP_ID } = require("./common.js");
+const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("./common.js");
 
 const client = new Client({
     node: "http://localhost:9200",
@@ -116,8 +116,8 @@ app.get("/index/suggest", async (req, res) => {
     });
 });
 
-app.listen(PORT, PROD_IP, () =>
-    console.log(`CSE356 Milestone 3: listening on port ${PORT}`)
+app.listen(ELASTIC_PORT, LOCAL_IP, () =>
+    console.log(`CSE356 Milestone 3: listening on port ${ELASTIC_PORT}`)
 );
 
 // curl -X PUT "localhost:9200/documents?pretty" -H 'Content-Type: application/json' -d'

@@ -370,7 +370,7 @@ function queueCallback({ request, response }, completed) {
         "Currently Busy Processing Task " + request.params.connectionId
     );
     // updateOps(request, response);
-    const remaining = queue.length();
+    // const remaining = queue.length();
 
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
@@ -383,6 +383,10 @@ function queueCallback({ request, response }, completed) {
     let doc = connection.get("documents", docId);
     let content = request.body.op;
     let version = request.body.version;
+    let remaining = 0;
+    if (docSessions.has(docId)) {
+        remaining = docSessions.get(docId).queue.length;
+    }
 
     if (
         docSessions.has(docId) &&

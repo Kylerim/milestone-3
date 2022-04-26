@@ -13,8 +13,6 @@ const { v4: uuidv4 } = require("uuid");
 const mime = require("mime");
 const async = require("async");
 
-// create a new queue, and pass how many you want to scrape at once
-
 var QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
 const {
@@ -31,6 +29,14 @@ const {
     loginWithSession,
     verify,
 } = require("./controllers/auth");
+
+const {
+    searchIndex,
+    suggestIndex,
+    createIndex,
+    updateIndex,
+    deleteIndex,
+} = require("./controllers/elastic");
 const { Document } = require("./models/Document");
 // const { getDocLists } = require('./controllers/documents');
 
@@ -147,6 +153,7 @@ function eventsHandler(request, response) {
 
         docSessions.set(docId, {
             doc,
+            elasticVersion : doc.version,
             clients: new Set(),
         });
         console.log("docSessions.size", docSessions.size);
@@ -357,6 +364,12 @@ const queue = async.queue(({ request, response }, completed) => {
     let doc = connection.get("documents", docId);
     let content = request.body.op;
     let version = request.body.version;
+    
+    if(Math.abs(version - (docSessions.get(docId).elasticVersion)) > 20) {
+        console.log("Version of elastic: ",docSessions.get(docId).elasticVersion, " Version:", version );
+        docSessions.get(docId).elasticVersion = version;
+        updateIndex(docId, doc.data.ops);
+    }
     console.log("******************************************");
     console.log("******************************************");
 
@@ -475,7 +488,7 @@ function updateCursor(request, response) {
     return;
 }
 
-function createDoc(request, response) {
+async function createDoc(request, response) {
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
         response.json({ error: true, message: "Not logged in" });
@@ -488,6 +501,8 @@ function createDoc(request, response) {
 
     console.log("docId: " + docid);
     const doc = connection.get("documents", docid);
+    //adding document to index
+    await createIndex(docid, name, "");
     doc.fetch(function (err) {
         response.setHeader("X-CSE356", GROUP_ID);
 
@@ -519,6 +534,7 @@ function deleteDoc(request, response) {
     console.log("deleting docId: " + docId);
     // let doc = docSessions.get(docId).doc;
     // if (doc === undefined)
+    await deleteIndex(docId);
     Document.findOne({ _id: docId }).exec((err, document) => {
         if (err) {
             response.json({
@@ -682,6 +698,9 @@ app.post("/users/signup", adduser);
 app.post("/users/login", login);
 app.get("/users/logout", logout);
 app.get("/users/verify", verify);
+
+app.get("/index/search", searchIndex);
+app.get("/index/suggest", suggestIndex);
 
 if (IS_PRODUCTION_MODE) {
     app.listen(PORT, IP, () =>

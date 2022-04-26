@@ -135,6 +135,7 @@ function eventsHandler(request, response) {
     // if no active docsession, add to current doc session map
     if (!docSessions.has(docId)) {
         const doc = connection.get("documents", docId);
+        const queue = async.queue(queueCallback, 1);
         if (!doc.subscribed) {
             console.log();
             doc.subscribe(function (err) {
@@ -155,6 +156,7 @@ function eventsHandler(request, response) {
             doc,
             elasticVersion: doc.version,
             clients: new Set(),
+            queue,
         });
         console.log("docSessions.size", docSessions.size);
     }
@@ -363,7 +365,7 @@ function sendPresenceEventsToAll(request, docId, connectionId, cursor) {
 }
 
 // let flag = false;
-const queue = async.queue(({ request, response }, completed) => {
+function queueCallback({ request, response }, completed) {
     console.log(
         "Currently Busy Processing Task " + request.params.connectionId
     );
@@ -463,9 +465,18 @@ const queue = async.queue(({ request, response }, completed) => {
     }
 
     // const connectionId = request.params.connectionId;
-}, 1);
+}
 
 function handleUpdateOpsQueue(request, response) {
+    const docId = request.params.docId;
+    if (!docSessions.has(docId)) {
+        response.json({
+            error: true,
+            message: "Document does not exit anymore",
+        });
+        return;
+    }
+    const queue = docSessions.get(docId).queue;
     queue.push({ request, response }, (error, { connectionId, remaining }) => {
         if (error) {
             console.log(`An error occurred while processing task ${task}`);

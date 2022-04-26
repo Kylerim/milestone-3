@@ -115,13 +115,7 @@ exports.suggestIndex = async (req, res) => {
         },
     });
     console.log(result.suggest.suggester);
-    const toSend = result.suggest.suggester[0].options.map((doc) => {
-        return {
-            id: doc._id,
-            name: doc._source.title,
-            snippet: doc.highlight.content || [],
-        };
-    });
+    const toSend = result.suggest.suggester[0].options.map((opt) => opt.text);
     res.json(toSend);
 };
 

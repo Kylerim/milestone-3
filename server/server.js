@@ -687,7 +687,7 @@ function uploadImage(req, res) {
             console.log(url);
 
             res.setHeader("Content-Type", mime.getType(url));
-            return res.status(201).json({ mediaid: imageName });
+            return res.status(200).json({ mediaid: imageName });
         }
     });
 }

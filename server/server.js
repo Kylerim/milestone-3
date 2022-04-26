@@ -80,8 +80,8 @@ app.get("/doc/edit/:docId", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../client/build", "index.html"));
 });
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true, limit: "100mb" }));
+app.use(bodyParser.json({ limit: "100mb" }));
 
 if (IS_PRODUCTION_MODE) {
     app.use(cors({ credentials: true }));

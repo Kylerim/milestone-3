@@ -34,7 +34,7 @@ exports.deleteIndex = async function (id) {
 };
 
 exports.updateIndex = async function (id, delta) {
-    let converter = new QuillDeltaToHtmlConverter(doc.data.ops, {});
+    let converter = new QuillDeltaToHtmlConverter(delta, {});
     let content = converter.convert();
     // const content = toPlaintext(delta);
     console.log("Updating content", content);

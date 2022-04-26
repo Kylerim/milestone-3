@@ -104,8 +104,8 @@ exports.suggestIndex = async (req, res) => {
             suggester: {
                 text: query,
                 term: {
-                    field: content,
-                    suggest_mode: always,
+                    field: "content",
+                    suggest_mode: "always",
                     prefix_length: query.length,
                     min_word_length: query.length,
                     string_distance: "ngram",

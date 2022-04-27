@@ -113,10 +113,10 @@ exports.suggestIndex = async (req, res) => {
                 text: query,
                 term: {
                     field: "content",
-                    suggest_mode: "always",
+                    suggest_mode: "popular",
                     prefix_length: query.length,
-                    min_word_length: query.length,
-                    string_distance: "ngram",
+                    min_word_length: query.length + 1,
+                    // string_distance: "ngram",
                     // sort: "frequency",
                 },
             },

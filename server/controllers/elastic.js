@@ -69,7 +69,7 @@ exports.searchIndex = async (req, res) => {
         query: {
             multi_match: {
                 query: query,
-                fields: ["title^2", "content"],
+                fields: ["title", "content"],
             },
         },
         highlight: {

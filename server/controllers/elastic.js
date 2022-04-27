@@ -76,8 +76,7 @@ exports.searchIndex = async (req, res) => {
         },
         highlight: {
             fields: {
-                content: {},
-                title: {},
+                content: { type: "fvh" },
             },
             fragment_size: 150,
             boundary_chars: "",

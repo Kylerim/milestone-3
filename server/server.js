@@ -148,14 +148,14 @@ function eventsHandler(request, response) {
             doc.subscribe(function (err) {
                 console.log("subscribed to ", docId);
                 if (err) throw err;
-                // doc.on('op', function (delta, source) {
-                //     // console.log("sending Presence back");
-                //     console.log(JSON.stringify(doc.data.ops));
-                //     // console.log(doc);
-                //     // console.log(docSessions.size);
-                //     sendOpToAll(request, docId, source, delta);
-
-                // });
+                doc.on("op", function (delta, source) {
+                    // console.log("sending Presence back");
+                    console.log(JSON.stringify(doc.data.ops));
+                    // console.log(doc);
+                    // console.log(docSessions.size);
+                    sendOpToAll(request, docId, source, delta);
+                    sendAck(request, docId, connectionId, content, version);
+                });
             });
         }
 
@@ -455,8 +455,8 @@ function queueCallback({ request, response }, completed) {
                 );
                 console.log("Content: ", content);
                 console.log("Preparing to send acknowledgement back...");
-                sendOpToAll(request, docId, connectionId, content);
-                sendAck(request, docId, connectionId, content, version);
+                // sendOpToAll(request, docId, connectionId, content);
+                // sendAck(request, docId, connectionId, content, version);
                 completed(null, { connectionId, remaining });
                 // flag = false;
                 response.json({ status: "ok" });

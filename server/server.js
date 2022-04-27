@@ -46,8 +46,8 @@ const {
 const { Document } = require("./models/Document");
 // const { getDocLists } = require('./controllers/documents');
 
-const PORT = IS_PRODUCTION_MODE ? 80 : 5001;
-//const PORT = 5001;
+// const PORT = IS_PRODUCTION_MODE ? 80 : 5001;
+const PORT = 5001;
 const IP = IS_PRODUCTION_MODE ? PROD_IP : LOCAL_IP;
 
 const sessionStore = new MongoStore({
@@ -148,14 +148,14 @@ function eventsHandler(request, response) {
             doc.subscribe(function (err) {
                 console.log("subscribed to ", docId);
                 if (err) throw err;
-                doc.on("op", function (delta, source) {
-                    // console.log("sending Presence back");
-                    console.log(JSON.stringify(doc.data.ops));
-                    // console.log(doc);
-                    // console.log(docSessions.size);
-                    sendOpToAll(request, docId, source, delta);
-                    sendAck(request, docId, connectionId, content, version);
-                });
+                // doc.on('op', function (delta, source) {
+                //     // console.log("sending Presence back");
+                //     console.log(JSON.stringify(doc.data.ops));
+                //     // console.log(doc);
+                //     // console.log(docSessions.size);
+                //     sendOpToAll(request, docId, source, delta);
+
+                // });
             });
         }
 
@@ -455,8 +455,8 @@ function queueCallback({ request, response }, completed) {
                 );
                 console.log("Content: ", content);
                 console.log("Preparing to send acknowledgement back...");
-                // sendOpToAll(request, docId, connectionId, content);
-                // sendAck(request, docId, connectionId, content, version);
+                sendOpToAll(request, docId, connectionId, content);
+                sendAck(request, docId, connectionId, content, version);
                 completed(null, { connectionId, remaining });
                 // flag = false;
                 response.json({ status: "ok" });

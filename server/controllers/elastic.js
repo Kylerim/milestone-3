@@ -72,9 +72,9 @@ exports.searchIndex = async (req, res) => {
         //     },
         // },
         query: {
-            query_string: {
+            multi_match: {
                 query: query,
-                default_field: "content",
+                fields: ["title", "content"],
             },
         },
         highlight: {
@@ -89,15 +89,15 @@ exports.searchIndex = async (req, res) => {
             fragment_size: 150,
         },
     });
-    console.log(result.hits.hits);
-    // const toSend = result.hits.hits.map((doc) => {
-    //     return {
-    //         id: doc._id,
-    //         name: doc._source.title,
-    //         snippet: doc.highlight.content[0] || "",
-    //     };
-    // });
-    res.json(result.hits);
+    // console.log(result.hits.hits);
+    const toSend = result.hits.hits.map((doc) => {
+        return {
+            id: doc._id,
+            name: doc._source.title,
+            snippet: doc.highlight.content[0] || "",
+        };
+    });
+    res.json(toSend);
 };
 
 exports.suggestIndex = async (req, res) => {

@@ -68,7 +68,7 @@ exports.searchIndex = async (req, res) => {
         size: 10,
         query: {
             match: {
-                _all: query,
+                content: query,
             },
         },
         highlight: {

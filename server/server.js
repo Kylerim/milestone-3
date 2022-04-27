@@ -46,8 +46,8 @@ const {
 const { Document } = require("./models/Document");
 // const { getDocLists } = require('./controllers/documents');
 
-// const PORT = IS_PRODUCTION_MODE ? 80 : 5001;
-const PORT = 5001;
+const PORT = IS_PRODUCTION_MODE ? 80 : 5001;
+//const PORT = 5001;
 const IP = IS_PRODUCTION_MODE ? PROD_IP : LOCAL_IP;
 
 const sessionStore = new MongoStore({

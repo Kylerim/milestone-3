@@ -41,7 +41,8 @@ const {
 const { Document } = require("./models/Document");
 // const { getDocLists } = require('./controllers/documents');
 
-const PORT = IS_PRODUCTION_MODE ? 80 : 5001;
+// const PORT = IS_PRODUCTION_MODE ? 80 : 5001;
+const PORT = 5001;
 const IP = IS_PRODUCTION_MODE ? PROD_IP : LOCAL_IP;
 
 const sessionStore = new MongoStore({
@@ -84,11 +85,11 @@ app.get("/doc/edit/:docId", (req, res) => {
 app.use(bodyParser.urlencoded({ extended: true, limit: "100mb" }));
 app.use(bodyParser.json({ limit: "100mb" }));
 
-if (IS_PRODUCTION_MODE) {
-    app.use(cors({ credentials: true }));
-} else {
-    app.use(cors({ credentials: true, origin: true }));
-}
+// if (IS_PRODUCTION_MODE) {
+//     app.use(cors({ credentials: true }));
+// } else {
+app.use(cors({ credentials: true, origin: true }));
+// }
 
 app.get("/media/access/:id", (request, response, next) => {
     if (!request.session.user) {

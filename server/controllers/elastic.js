@@ -67,7 +67,7 @@ exports.searchIndex = async (req, res) => {
         index: "documents",
         size: 10,
         query: {
-            multi_match: {
+            match_phrase: {
                 query: query,
                 type: "best_fields",
                 fields: ["title", "content"],

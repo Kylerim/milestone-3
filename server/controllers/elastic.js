@@ -79,10 +79,13 @@ exports.searchIndex = async (req, res) => {
         },
         highlight: {
             fields: {
-                content: { type: "fvh", fragment_size: 100 },
+                content: {
+                    type: "fvh",
+                    fragment_size: 100,
+                    number_of_fragments: 1,
+                },
             },
             fragment_size: 150,
-            number_of_fragments: 1,
         },
     });
     console.log(result.hits.hits);

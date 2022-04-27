@@ -77,12 +77,26 @@ app.get("/index/search", async (req, res) => {
     const result = await client.search({
         index: "documents",
         query: {
-            match: { content: query },
+            multi_match: {
+                query: query,
+                fields: ["title^2", "content"],
+            },
+        },
+        highlight: {
+            fields: {
+                content: {},
+            },
         },
     });
-    res.json({
-        result: result.hits,
+
+    const toSend = result.hits.hits.map((doc) => {
+        return {
+            id: doc._id,
+            name: doc._source.title,
+            snippet: doc.highlight.content,
+        };
     });
+    res.json(toSend);
 });
 
 app.get("/index/suggest", async (req, res) => {
@@ -106,6 +120,18 @@ app.listen(ELASTIC_PORT, LOCAL_IP, () =>
     console.log(`CSE356 Milestone 3: listening on port ${ELASTIC_PORT}`)
 );
 
+// curl -X PUT "localhost:9200/documents?pretty" -H 'Content-Type: application/json' -d'
+// {
+//   "settings": {
+//     "number_of_shards": 1
+//   },
+//   "mappings": {
+//     "properties": {
+//       "title": { "type": "text", "analyzer":"english" }, "content": {"type": "text", "analyzer": "english"}
+//     }
+//   }
+// }
+// '
 // async function run() {
 //     // Let's start by indexing some data
 //     await client.index({

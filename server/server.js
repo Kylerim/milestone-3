@@ -13,8 +13,6 @@ const { v4: uuidv4 } = require("uuid");
 const mime = require("mime");
 const async = require("async");
 
-// create a new queue, and pass how many you want to scrape at once
-
 var QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
 const {
@@ -31,6 +29,14 @@ const {
     loginWithSession,
     verify,
 } = require("./controllers/auth");
+
+const {
+    searchIndex,
+    suggestIndex,
+    createIndex,
+    updateIndex,
+    deleteIndex,
+} = require("./controllers/elastic");
 const { Document } = require("./models/Document");
 // const { getDocLists } = require('./controllers/documents');
 
@@ -75,8 +81,8 @@ app.get("/doc/edit/:docId", (req, res) => {
     res.sendFile(path.resolve(__dirname, "../client/build", "index.html"));
 });
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true, limit: "100mb" }));
+app.use(bodyParser.json({ limit: "100mb" }));
 
 // if (IS_PRODUCTION_MODE) {
 //     app.use(cors({ credentials: true }));
@@ -130,6 +136,7 @@ function eventsHandler(request, response) {
     // if no active docsession, add to current doc session map
     if (!docSessions.has(docId)) {
         const doc = connection.get("documents", docId);
+        const queue = async.queue(queueCallback, 1);
         if (!doc.subscribed) {
             console.log();
             doc.subscribe(function (err) {
@@ -148,7 +155,9 @@ function eventsHandler(request, response) {
 
         docSessions.set(docId, {
             doc,
+            elasticVersion: doc.version,
             clients: new Set(),
+            queue,
         });
         console.log("docSessions.size", docSessions.size);
     }
@@ -251,7 +260,13 @@ function sendOpToAll(request, docId, connectionId, data) {
         response.json({ error: true, message: "Not logged in" });
         return;
     }
-
+    if (!docSessions.get(docId)) {
+        response.json({
+            error: true,
+            message: "Document does not exit anymore",
+        });
+        return;
+    }
     const clients = docSessions.get(docId).clients;
     console.log("Broadcasting OPs to ", clients.size - 1);
     try {
@@ -291,6 +306,10 @@ function sendAck(request, docId, connectionId, data, version) {
         return;
     }
     if (!docSessions.get(docId)) {
+        response.json({
+            error: true,
+            message: "Document does not exit anymore",
+        });
         return;
     }
     const clients = docSessions.get(docId).clients;
@@ -313,6 +332,13 @@ function sendAck(request, docId, connectionId, data, version) {
 function sendPresenceEventsToAll(request, docId, connectionId, cursor) {
     console.log("[PRESENCE] Sending to all... FROM:", connectionId);
     if (!docSessions.get(docId)) {
+        return;
+    }
+    if (!docSessions.get(docId)) {
+        response.json({
+            error: true,
+            message: "Document does not exit anymore",
+        });
         return;
     }
     const clients = docSessions.get(docId).clients;
@@ -340,12 +366,12 @@ function sendPresenceEventsToAll(request, docId, connectionId, cursor) {
 }
 
 // let flag = false;
-const queue = async.queue(({ request, response }, completed) => {
+function queueCallback({ request, response }, completed) {
     console.log(
         "Currently Busy Processing Task " + request.params.connectionId
     );
     // updateOps(request, response);
-    const remaining = queue.length();
+    // const remaining = queue.length();
 
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
@@ -358,6 +384,24 @@ const queue = async.queue(({ request, response }, completed) => {
     let doc = connection.get("documents", docId);
     let content = request.body.op;
     let version = request.body.version;
+    let remaining = 0;
+    if (docSessions.has(docId)) {
+        remaining = docSessions.get(docId).queue.length;
+    }
+
+    if (
+        docSessions.has(docId) &&
+        Math.abs(version - docSessions.get(docId).elasticVersion) > 5
+    ) {
+        console.log(
+            "Version of elastic: ",
+            docSessions.get(docId).elasticVersion,
+            " Version:",
+            version
+        );
+        docSessions.get(docId).elasticVersion = version;
+        updateIndex(docId, doc.data.ops);
+    }
     console.log("******************************************");
     console.log("******************************************");
 
@@ -426,9 +470,18 @@ const queue = async.queue(({ request, response }, completed) => {
     }
 
     // const connectionId = request.params.connectionId;
-}, 1);
+}
 
 function handleUpdateOpsQueue(request, response) {
+    const docId = request.params.docId;
+    if (!docSessions.has(docId)) {
+        response.json({
+            error: true,
+            message: "Document does not exit anymore",
+        });
+        return;
+    }
+    const queue = docSessions.get(docId).queue;
     queue.push({ request, response }, (error, { connectionId, remaining }) => {
         if (error) {
             console.log(`An error occurred while processing task ${task}`);
@@ -476,7 +529,7 @@ function updateCursor(request, response) {
     return;
 }
 
-function createDoc(request, response) {
+async function createDoc(request, response) {
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
         response.json({ error: true, message: "Not logged in" });
@@ -489,6 +542,8 @@ function createDoc(request, response) {
 
     console.log("docId: " + docid);
     const doc = connection.get("documents", docid);
+    //adding document to index
+    await createIndex(docid, name, "");
     doc.fetch(function (err) {
         response.setHeader("X-CSE356", GROUP_ID);
 
@@ -508,7 +563,7 @@ function createDoc(request, response) {
     });
 }
 
-function deleteDoc(request, response) {
+async function deleteDoc(request, response) {
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
         response.json({ error: true, message: "Not logged in" });
@@ -520,6 +575,7 @@ function deleteDoc(request, response) {
     console.log("deleting docId: " + docId);
     // let doc = docSessions.get(docId).doc;
     // if (doc === undefined)
+    await deleteIndex(docId);
     Document.findOne({ _id: docId }).exec((err, document) => {
         if (err) {
             response.json({
@@ -664,7 +720,7 @@ function uploadImage(req, res) {
             console.log(url);
 
             res.setHeader("Content-Type", mime.getType(url));
-            return res.status(201).json({ mediaid: imageName });
+            return res.status(200).json({ mediaid: imageName });
         }
     });
 }
@@ -683,6 +739,9 @@ app.post("/users/signup", adduser);
 app.post("/users/login", login);
 app.get("/users/logout", logout);
 app.get("/users/verify", verify);
+
+app.get("/index/search", searchIndex);
+app.get("/index/suggest", suggestIndex);
 
 if (IS_PRODUCTION_MODE) {
     app.listen(PORT, IP, () =>

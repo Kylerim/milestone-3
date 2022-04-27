@@ -3,6 +3,7 @@
     "start": "nodemon server.js"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^8.1.0",
     "@teamwork/websocket-json-stream": "^2.0.0",
     "body-parser": "^1.19.2",
     "connect-mongo": "^4.6.0",
@@ -12,6 +13,7 @@
     "express-jwt": "^6.1.1",
     "express-session": "^1.17.2",
     "express-validator": "^6.14.0",
+    "html-to-text": "^8.2.0",
     "jsonwebtoken": "^8.5.1",
     "mime": "^3.0.0",
     "mongoose": "^6.2.3",

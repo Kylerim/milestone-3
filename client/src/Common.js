@@ -10,3 +10,6 @@ export const endpointSignUp = backendURL + "/users/signup";
 export const endpointDocList = backendURL + "/collection/list";
 export const endpointCreateDoc = backendURL + "/collection/create";
 export const endpointDeleteDoc = backendURL + "/collection/delete";
+
+export const endpointSearch = backendURL + "/index/search";
+export const endpointSuggest = backendURL + "/index/suggest";

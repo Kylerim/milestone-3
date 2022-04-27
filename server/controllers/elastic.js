@@ -117,7 +117,7 @@ exports.suggestIndex = async (req, res) => {
                     prefix_length: query.length,
                     min_word_length: query.length,
                     string_distance: "ngram",
-                    sort: "frequency",
+                    // sort: "frequency",
                 },
             },
         },

@@ -68,9 +68,7 @@ exports.searchIndex = async (req, res) => {
         size: 10,
         query: {
             match: {
-                query: query,
-                field: "content",
-                operator: "and",
+                _all: query,
             },
         },
         highlight: {
@@ -78,7 +76,6 @@ exports.searchIndex = async (req, res) => {
                 content: { type: "fvh", fragment_size: 100 },
             },
             fragment_size: 150,
-            boundary_chars: "",
             number_of_fragments: 1,
         },
     });

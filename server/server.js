@@ -84,11 +84,11 @@ app.get("/doc/edit/:docId", (req, res) => {
 app.use(bodyParser.urlencoded({ extended: true, limit: "100mb" }));
 app.use(bodyParser.json({ limit: "100mb" }));
 
-// if (IS_PRODUCTION_MODE) {
-//     app.use(cors({ credentials: true }));
-// } else {
-app.use(cors({ credentials: true, origin: true }));
-// }
+if (IS_PRODUCTION_MODE) {
+    app.use(cors({ credentials: true }));
+} else {
+    app.use(cors({ credentials: true, origin: true }));
+}
 
 app.get("/media/access/:id", (request, response, next) => {
     if (!request.session.user) {
@@ -745,7 +745,9 @@ app.get("/index/suggest", suggestIndex);
 
 if (IS_PRODUCTION_MODE) {
     app.listen(PORT, IP, () =>
-        console.log(`CSE356 Milestone 2: listening on port ${PORT}`)
+        console.log(
+            `[PRODUCTION MODE] CSE356 Milestone 2: listening on port ${PORT}`
+        )
     );
 } else {
     app.listen(PORT, IP, () =>

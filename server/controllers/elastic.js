@@ -84,14 +84,14 @@ exports.searchIndex = async (req, res) => {
         },
     });
     console.log(result.hits.hits);
-    const toSend = result.hits.hits.map((doc) => {
-        return {
-            id: doc._id,
-            name: doc._source.title,
-            snippet: doc.highlight.content[0] || "",
-        };
-    });
-    res.json(toSend);
+    // const toSend = result.hits.hits.map((doc) => {
+    //     return {
+    //         id: doc._id,
+    //         name: doc._source.title,
+    //         snippet: doc.highlight.content[0] || "",
+    //     };
+    // });
+    res.json(result.hits);
 };
 
 exports.suggestIndex = async (req, res) => {

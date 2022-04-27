@@ -108,24 +108,55 @@ exports.suggestIndex = async (req, res) => {
     console.log("Suggest query is", query);
     const result = await client.search({
         index: "documents",
-        suggest: {
-            suggester: {
-                text: query,
-                term: {
-                    field: "content",
-                    suggest_mode: "popular",
-                    prefix_length: query.length,
-                    min_word_length: query.length + 1,
-                    // string_distance: "ngram",
-                    // sort: "frequency",
+        query: {
+            prefix: { content: query },
+        },
+        highlight: {
+            pre_tags: "",
+            post_tags: "",
+            fields: {
+                content: {
+                    fragment_size: query.length,
+                    max_fragment_length: query.length,
+                },
+                title: {
+                    fragment_size: query.length,
+                    max_fragment_length: query.length,
                 },
             },
         },
     });
-    console.log(result.suggest.suggester);
-    const toSend = result.suggest.suggester[0].options.map((opt) => opt.text);
-    res.json(toSend);
+    res.json(result.hits);
 };
+
+// exports.suggestIndex = async (req, res) => {
+//     if (!req.session.user) {
+//         //response.setHeader('X-CSE356', GROUP_ID);
+//         res.json({ error: true, message: "Not logged in" });
+//         return;
+//     }
+//     const query = req.query.q;
+//     console.log("Suggest query is", query);
+//     const result = await client.search({
+//         index: "documents",
+//         suggest: {
+//             suggester: {
+//                 text: query,
+//                 term: {
+//                     field: "content",
+//                     suggest_mode: "popular",
+//                     prefix_length: query.length,
+//                     min_word_length: query.length + 1,
+//                     string_distance: "ngram",
+//                     // sort: "frequency",
+//                 },
+//             },
+//         },
+//     });
+//     console.log(result.suggest.suggester);
+//     const toSend = result.suggest.suggester[0].options.map((opt) => opt.text);
+//     res.json(toSend);
+// };
 
 // curl -X PUT "localhost:9200/documents?pretty" -H 'Content-Type: application/json' -d'
 // {

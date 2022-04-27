@@ -14,10 +14,6 @@ const { v4: uuidv4 } = require("uuid");
 const mime = require("mime");
 const async = require("async");
 
-if (IS_PRODUCTION_MODE) {
-    console = console || {};
-    console.log = function () {};
-}
 var QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
 const {
@@ -27,6 +23,11 @@ const {
     GROUP_ID,
     websocketServer,
 } = require("./common.js");
+
+if (IS_PRODUCTION_MODE) {
+    console = console || {};
+    console.log = function () {};
+}
 const {
     adduser,
     login,

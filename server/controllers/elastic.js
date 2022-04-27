@@ -84,7 +84,7 @@ exports.searchIndex = async (req, res) => {
         return {
             id: doc._id,
             name: doc._source.title,
-            snippet: doc.highlight.content || [],
+            snippet: doc.highlight.content[0] || "",
         };
     });
     res.json(toSend);

@@ -71,12 +71,11 @@ exports.searchIndex = async (req, res) => {
                 query: query,
                 type: "best_fields",
                 fields: ["title", "content"],
-                operator: "and",
             },
         },
         highlight: {
             fields: {
-                content: { type: "fvh" },
+                content: {},
             },
             fragment_size: 150,
             boundary_chars: "",

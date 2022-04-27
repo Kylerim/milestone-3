@@ -117,6 +117,8 @@ exports.suggestIndex = async (req, res) => {
             fields: {
                 content: {
                     fragment_size: query.length,
+                    number_of_fragments: 1,
+                    boundary_chars: "",
                 },
             },
         },

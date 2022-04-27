@@ -66,9 +66,15 @@ exports.searchIndex = async (req, res) => {
     const result = await client.search({
         index: "documents",
         size: 10,
+        // query: {
+        //     match: {
+        //         content: query,
+        //     },
+        // },
         query: {
-            match: {
-                content: query,
+            query_string: {
+                query: query,
+                default_field: "content",
             },
         },
         highlight: {

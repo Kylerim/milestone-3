@@ -1,3 +1,4 @@
+/* eslint no-console: ["error", { allow: ["warn", "error"] }] */
 const WebSocket = require("ws");
 const express = require("express");
 var ShareDB = require("sharedb/lib/client");

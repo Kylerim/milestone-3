@@ -79,6 +79,9 @@ exports.searchIndex = async (req, res) => {
                 content: {},
                 title: {},
             },
+            fragment_size: 150,
+            boundary_chars: "",
+            number_of_fragments: 1,
         },
     });
     console.log(result.hits.hits);

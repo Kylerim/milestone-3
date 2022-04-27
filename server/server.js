@@ -235,6 +235,7 @@ function eventsHandler(request, response) {
         if (clients.size === 0) {
             // doc.destroy();
             console.log(doc);
+            updateIndex(docId, doc.data.ops);
             // doc.unsubscribe(function (error) {
             // if (error) throw error;
             console.log("docSessions.size", docSessions.size);
@@ -397,7 +398,7 @@ function queueCallback({ request, response }, completed) {
 
     if (
         docSessions.has(docId) &&
-        Math.abs(version - docSessions.get(docId).elasticVersion) > 5
+        Math.abs(version - docSessions.get(docId).elasticVersion) > 20
     ) {
         console.log(
             "Version of elastic: ",

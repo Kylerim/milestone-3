@@ -24,10 +24,10 @@ const {
     websocketServer,
 } = require("./common.js");
 
-if (IS_PRODUCTION_MODE) {
-    console = console || {};
-    console.log = function () {};
-}
+// if (IS_PRODUCTION_MODE) {
+//     console = console || {};
+//     console.log = function () {};
+// }
 const {
     adduser,
     login,
@@ -266,7 +266,7 @@ function sendOpToAll(request, docId, connectionId, data) {
         response.json({ error: true, message: "Not logged in" });
         return;
     }
-    if (!docSessions.get(docId)) {
+    if (!docSessions.has(docId)) {
         response.json({
             error: true,
             message: "Document does not exit anymore",
@@ -311,36 +311,33 @@ function sendAck(request, docId, connectionId, data, version) {
         response.json({ error: true, message: "Not logged in" });
         return;
     }
-    if (!docSessions.get(docId)) {
+    if (!docSessions.has(docId)) {
         response.json({
             error: true,
             message: "Document does not exit anymore",
         });
         return;
     }
-    const clients = docSessions.get(docId).clients;
+    const client = docSessions.get(docId).clients.get(connectionId);
 
-    clients.forEach((client) => {
-        if (client.id == connectionId) {
-            const ackData = { ack: data };
-            client.response.write(`data: ${JSON.stringify(ackData)}\n\n`);
-            console.log(
-                "[ACK] Sending TO (itself):",
-                connectionId,
-                "  [Version]: ",
-                version
-            );
-            console.log(`Ack Data: ${JSON.stringify(ackData.ack)}`);
-        }
-    });
+    // clients.forEach((client) => {
+    //     if (client.id == connectionId) {
+    const ackData = { ack: data };
+    client.response.write(`data: ${JSON.stringify(ackData)}\n\n`);
+    console.log(
+        "[ACK] Sending TO (itself):",
+        connectionId,
+        "  [Version]: ",
+        version
+    );
+    console.log(`Ack Data: ${JSON.stringify(ackData.ack)}`);
+    // }
+    // });
 }
 
 function sendPresenceEventsToAll(request, docId, connectionId, cursor) {
     console.log("[PRESENCE] Sending to all... FROM:", connectionId);
-    if (!docSessions.get(docId)) {
-        return;
-    }
-    if (!docSessions.get(docId)) {
+    if (!docSessions.has(docId)) {
         response.json({
             error: true,
             message: "Document does not exit anymore",
@@ -390,14 +387,10 @@ function queueCallback({ request, response }, completed) {
     let doc = connection.get("documents", docId);
     let content = request.body.op;
     let version = request.body.version;
-    let remaining = 0;
-    if (docSessions.has(docId)) {
-        remaining = docSessions.get(docId).queue.length;
-    }
 
     if (
         docSessions.has(docId) &&
-        Math.abs(version - docSessions.get(docId).elasticVersion) > 5
+        Math.abs(version - docSessions.get(docId).elasticVersion) > 20
     ) {
         console.log(
             "Version of elastic: ",
@@ -418,7 +411,7 @@ function queueCallback({ request, response }, completed) {
 
     if (version < doc.version) {
         console.log("Sending retry back");
-        completed(null, { connectionId, remaining });
+        completed(null, { connectionId });
         response.json({ status: "retry" });
         response.end();
         return;
@@ -457,7 +450,7 @@ function queueCallback({ request, response }, completed) {
                 console.log("Preparing to send acknowledgement back...");
                 sendOpToAll(request, docId, connectionId, content);
                 sendAck(request, docId, connectionId, content, version);
-                completed(null, { connectionId, remaining });
+                completed(null, { connectionId });
                 // flag = false;
                 response.json({ status: "ok" });
                 response.end();
@@ -488,12 +481,11 @@ function handleUpdateOpsQueue(request, response) {
         return;
     }
     const queue = docSessions.get(docId).queue;
-    queue.push({ request, response }, (error, { connectionId, remaining }) => {
+    queue.push({ request, response }, (error, { connectionId }) => {
         if (error) {
             console.log(`An error occurred while processing task ${task}`);
         } else {
-            console.log(`Finished processing task ${connectionId}
-                   . ${remaining} tasks remaining`);
+            console.log(`Finished processing task ${connectionId}`);
         }
     });
 }

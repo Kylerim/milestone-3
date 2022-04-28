@@ -85,6 +85,8 @@ exports.searchIndex = async (req, res) => {
                     fragment_size: 300,
                 },
             },
+            boundary_scanner: "sentence",
+            boundary_max_scan: 50,
         },
     });
     // console.log(result.hits.hits);

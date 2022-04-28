@@ -167,7 +167,9 @@ function eventsHandler(request, response) {
             elasticVersion: doc.version,
             clients: new Set(),
             queue,
+            isTouched: true,
         });
+        setInterval(sendUpdateToElastic(docId), 1000);
         // console.log("docSessions.size", docSessions.size);
     }
 
@@ -260,6 +262,22 @@ function eventsHandler(request, response) {
             // console.log("---------------------------------------------------");
         }
     });
+}
+
+function sendUpdateToElastic(docId) {
+    let doc = connection.get("documents", docId);
+
+    if (docSessions.has(docId) && docSessions.get(docId).isTouched) {
+        console.log(
+            "Version of elastic: ",
+            docSessions.get(docId).elasticVersion,
+            " Version:",
+            version
+        );
+        docSessions.get(docId).elasticVersion = version;
+        updateIndex(docId, doc.data.ops);
+        docSessions.get(docId).isTouched = false;
+    }
 }
 
 function sendOpToAll(request, docId, connectionId, data) {
@@ -397,19 +415,19 @@ function queueCallback({ request, response }, completed) {
     //     remaining = docSessions.get(docId).queue.length;
     // }
 
-    if (
-        docSessions.has(docId) &&
-        Math.abs(version - docSessions.get(docId).elasticVersion) > 5
-    ) {
-        console.log(
-            "Version of elastic: ",
-            docSessions.get(docId).elasticVersion,
-            " Version:",
-            version
-        );
-        docSessions.get(docId).elasticVersion = version;
-        updateIndex(docId, doc.data.ops);
-    }
+    // if (
+    //     docSessions.has(docId) &&
+    //     Math.abs(version - docSessions.get(docId).elasticVersion) > 5
+    // ) {
+    //     console.log(
+    //         "Version of elastic: ",
+    //         docSessions.get(docId).elasticVersion,
+    //         " Version:",
+    //         version
+    //     );
+    //     docSessions.get(docId).elasticVersion = version;
+    //     updateIndex(docId, doc.data.ops);
+    // }
     console.log("******************************************");
     console.log("******************************************");
 
@@ -435,6 +453,7 @@ function queueCallback({ request, response }, completed) {
         // } else {
         //     flag = true;
 
+        docSessions.get(docId).isTouched = false;
         doc.submitOp(content, { source: connectionId }, (err) => {
             if (err) {
                 console.log(

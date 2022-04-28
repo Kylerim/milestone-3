@@ -167,7 +167,7 @@ function eventsHandler(request, response) {
             elasticVersion: doc.version,
             clients: new Set(),
             queue,
-            isTouched: true,
+            isTouched: false,
         });
         setInterval(sendUpdateToElastic(docId), 1000);
         // console.log("docSessions.size", docSessions.size);

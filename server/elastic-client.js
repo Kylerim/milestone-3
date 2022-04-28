@@ -87,8 +87,8 @@ app.get("/index/search", async (req, res) => {
             fields: {
                 content: {},
             },
-            boundary_max_scan: 50,
-            boundary_scanner: "sentence",
+            // boundary_max_scan: 50,
+            // boundary_scanner: "sentence",
         },
     });
 

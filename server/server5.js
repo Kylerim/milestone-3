@@ -1,7 +1,6 @@
 /* eslint no-console: ["error", { allow: ["warn", "error"] }] */
-
-// emitter.setMaxListeners(0);
 process.setMaxListeners(0);
+// emitter.setMaxListeners(0);
 const WebSocket = require("ws");
 const express = require("express");
 var ShareDB = require("sharedb/lib/client");
@@ -27,10 +26,10 @@ const {
     websocketServer,
 } = require("./common.js");
 
-// if (IS_PRODUCTION_MODE) {
-//     console = console || {};
-//     console.log = function () {};
-// }
+if (IS_PRODUCTION_MODE) {
+    console = console || {};
+    console.log = function () {};
+}
 const {
     adduser,
     login,
@@ -168,7 +167,9 @@ function eventsHandler(request, response) {
             elasticVersion: doc.version,
             clients: new Set(),
             queue,
+            isTouched: true,
         });
+        setInterval(sendUpdateToElastic(docId), 1000);
         // console.log("docSessions.size", docSessions.size);
     }
 
@@ -261,6 +262,22 @@ function eventsHandler(request, response) {
             // console.log("---------------------------------------------------");
         }
     });
+}
+
+function sendUpdateToElastic(docId) {
+    let doc = connection.get("documents", docId);
+
+    if (docSessions.has(docId) && docSessions.get(docId).isTouched) {
+        console.log(
+            "Version of elastic: ",
+            docSessions.get(docId).elasticVersion
+            //     " Version:",
+            //     version
+        );
+        // docSessions.get(docId).elasticVersion = version;
+        updateIndex(docId, doc.data.ops);
+        docSessions.get(docId).isTouched = false;
+    }
 }
 
 function sendOpToAll(request, docId, connectionId, data) {
@@ -398,19 +415,19 @@ function queueCallback({ request, response }, completed) {
     //     remaining = docSessions.get(docId).queue.length;
     // }
 
-    if (
-        docSessions.has(docId) &&
-        Math.abs(version - docSessions.get(docId).elasticVersion) > 5
-    ) {
-        console.log(
-            "Version of elastic: ",
-            docSessions.get(docId).elasticVersion,
-            " Version:",
-            version
-        );
-        docSessions.get(docId).elasticVersion = version;
-        updateIndex(docId, doc.data.ops);
-    }
+    // if (
+    //     docSessions.has(docId) &&
+    //     Math.abs(version - docSessions.get(docId).elasticVersion) > 5
+    // ) {
+    //     console.log(
+    //         "Version of elastic: ",
+    //         docSessions.get(docId).elasticVersion,
+    //         " Version:",
+    //         version
+    //     );
+    //     docSessions.get(docId).elasticVersion = version;
+    //     updateIndex(docId, doc.data.ops);
+    // }
     console.log("******************************************");
     console.log("******************************************");
 
@@ -436,6 +453,8 @@ function queueCallback({ request, response }, completed) {
         // } else {
         //     flag = true;
 
+        docSessions.get(docId).elasticVersion = version;
+        docSessions.get(docId).isTouched = false;
         doc.submitOp(content, { source: connectionId }, (err) => {
             if (err) {
                 console.log(

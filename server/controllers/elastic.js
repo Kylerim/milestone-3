@@ -131,7 +131,7 @@ exports.suggestIndex = async (req, res) => {
     result.hits.hits.forEach((doc) => {
         const splited = doc.highlight.content[0].split("<<>>");
         splited.forEach((part) => {
-            if (part.startsWith(query)) {
+            if (part.startsWith(query) && part.length > query.length) {
                 ret.add(part);
             }
         });

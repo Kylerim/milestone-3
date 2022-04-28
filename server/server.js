@@ -145,7 +145,7 @@ function eventsHandler(request, response) {
     // if no active docsession, add to current doc session map
     if (!docSessions.has(docId)) {
         const doc = connection.get("documents", docId);
-        const queue = async.queue(queueCallback, 1);
+        const queue = async.queue(queueCallback, 4);
         if (!doc.subscribed) {
             console.log();
             doc.subscribe(function (err) {
@@ -162,14 +162,16 @@ function eventsHandler(request, response) {
             });
         }
 
+        const timer = setInterval(sendUpdateToElastic, 1000, docId);
         docSessions.set(docId, {
             doc,
             elasticVersion: doc.version,
             clients: new Set(),
             queue,
             isTouched: false,
+            timer: timer,
+            isBeingProcessed: false,
         });
-        setInterval(sendUpdateToElastic, 1000, docId);
         // console.log("docSessions.size", docSessions.size);
     }
 
@@ -242,6 +244,9 @@ function eventsHandler(request, response) {
             doc.unsubscribe(function (error) {
                 if (error) throw error;
                 console.log("docSessions.size", docSessions.size);
+                let docSession = docSessions.get(docId);
+                docSession.queue = null;
+                clearInterval(docSession.timer);
                 docSessions.delete(docId);
                 // console.log("---------------------------------------------------");
                 // console.log(`${docId} session is now removed from session map. `);
@@ -411,6 +416,7 @@ function queueCallback({ request, response }, completed) {
     let doc = connection.get("documents", docId);
     let content = request.body.op;
     let version = request.body.version;
+    let docSession = docSessions.get(docId);
     // let remaining = 0;
     // if (docSessions.has(docId)) {
     //     remaining = docSessions.get(docId).queue.length;
@@ -453,9 +459,12 @@ function queueCallback({ request, response }, completed) {
         //     return;
         // } else {
         //     flag = true;
-
-        docSessions.get(docId).elasticVersion = version;
-        docSessions.get(docId).isTouched = true;
+        if (docSession.isBeingProcessed) {
+            response.json({ status: "retry" });
+            response.end();
+            return;
+        }
+        docSession.isBeingProcessed = true;
         doc.submitOp(content, { source: connectionId }, (err) => {
             if (err) {
                 console.log(
@@ -482,7 +491,9 @@ function queueCallback({ request, response }, completed) {
                 sendOpToAll(request, docId, connectionId, content);
                 sendAck(request, docId, connectionId, content, version);
                 completed(null, { connectionId });
-                // flag = false;
+                docSession.elasticVersion = version;
+                docSession.isTouched = true;
+                docSession.isBeingProcessed = false;
                 response.json({ status: "ok" });
                 response.end();
                 return;

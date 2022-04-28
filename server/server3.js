@@ -233,14 +233,14 @@ function eventsHandler(request, response) {
             // doc.destroy();
             console.log(doc);
 
-            // doc.unsubscribe(function (error) {
-            // if (error) throw error;
-            // console.log("docSessions.size", docSessions.size);
-            docSessions.delete(docId);
-            // console.log("---------------------------------------------------");
-            // console.log(`${docId} session is now removed from session map. `);
-            // console.log("docSessions.size", docSessions.size);
-            // });
+            doc.unsubscribe(function (error) {
+                if (error) throw error;
+                console.log("docSessions.size", docSessions.size);
+                docSessions.delete(docId);
+                // console.log("---------------------------------------------------");
+                // console.log(`${docId} session is now removed from session map. `);
+                // console.log("docSessions.size", docSessions.size);
+            });
         } else {
             // console.log("---------------------------------------------------");
             // console.log(

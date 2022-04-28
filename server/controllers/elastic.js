@@ -75,14 +75,13 @@ exports.searchIndex = async (req, res) => {
         query: {
             multi_match: {
                 query: query,
-                type: "phrase",
                 fields: ["title", "content"],
             },
         },
         highlight: {
             fields: {
                 content: {
-                    fragment_size: 200,
+                    fragment_size: 300,
                 },
             },
         },

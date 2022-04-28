@@ -169,7 +169,7 @@ function eventsHandler(request, response) {
             queue,
             isTouched: false,
         });
-        setInterval(sendUpdateToElastic(docId), 1000);
+        setInterval(sendUpdateToElastic, 1000, docId);
         // console.log("docSessions.size", docSessions.size);
     }
 

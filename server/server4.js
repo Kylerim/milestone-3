@@ -165,7 +165,7 @@ function eventsHandler(request, response) {
             clients: new Set(),
             queue,
         });
-        console.log("docSessions.size", docSessions.size);
+        // console.log("docSessions.size", docSessions.size);
     }
 
     // read a docsession given a docId
@@ -178,86 +178,81 @@ function eventsHandler(request, response) {
         response,
     };
 
-    console.log("---------------------------------------------------");
-    console.log("---------------------------------------------------");
+    // console.log("---------------------------------------------------");
+    // console.log("---------------------------------------------------");
 
-    console.log(
-        `[NEW CONNECTION] uid: ${request.session.user} | cid: ${clientId}`
-    );
+    // console.log(
+    //     `[NEW CONNECTION] uid: ${request.session.user} | cid: ${clientId}`
+    // );
 
     //push if not exist
-    let toAdd = true;
-    clients.forEach((cl) => {
-        if (cl.id === clientId) {
-            toAdd = false;
-        }
-    });
-    if (toAdd) {
-        console.log("[USER CONNECTION] Adding: ", newClient.id);
+    if (!clients.has(clientId)) {
+        // console.log("[USER CONNECTION] Adding: ", newClient.id);
         clients.add(newClient);
     }
 
     // const newLocalPresence = presence.create(clientId);
     // newLocalPresence
     // localPresences.set(clientId, newLocalPresence);
-    console.log(
-        "[USERS] Currently Connected Users: ",
-        Array.from(clients).map((i) => "name: " + i.name + "| cid: " + i.id)
-    );
-    console.log("[USERS] Connected Users: ", clients.size);
-    console.log("---------------------------------------------------");
-    console.log("---------------------------------------------------");
+    // console.log(
+    //     "[USERS] Currently Connected Users: ",
+    //     Array.from(clients).map((i) => "name: " + i.name + "| cid: " + i.id)
+    // );
+    // console.log("[USERS] Connected Users: ", clients.size);
+    // console.log("---------------------------------------------------");
+    // console.log("---------------------------------------------------");
 
     //return the initial doc to the user.
     // note, we are only connecting the user..!
-    clients.forEach((cl) => {
-        if (cl.id === clientId) {
-            if (doc && doc.data && doc.data.ops) {
-                const ops = doc.data.ops;
-                const formatted = { content: ops, version: doc.version };
-                console.log(
-                    `[DOC] Sending Out Initial Document Content & Version. \n data: ${JSON.stringify(
-                        formatted
-                    )}\n\n`
-                );
-                response.write(`data: ${JSON.stringify(formatted)}\n\n`);
-            }
-        }
-    });
+    // clients.forEach((cl) => {
+    //     if (cl.id === clientId) {
+
+    if (doc && doc.data && doc.data.ops) {
+        const ops = doc.data.ops;
+        const formatted = { content: ops, version: doc.version };
+        // console.log(
+        //     `[DOC] Sending Out Initial Document Content & Version. \n data: ${JSON.stringify(
+        //         formatted
+        //     )}\n\n`
+        // );
+        response.write(`data: ${JSON.stringify(formatted)}\n\n`);
+    }
+
+    // });
     request.on("close", () => {
         updateIndex(docId, doc.data.ops);
         sendPresenceEventsToAll(request, docId, clientId, null);
         clients.delete(newClient);
 
-        console.log(`${clientId} Connection closed`);
-        console.log(
-            `[LOST CONNECTION] uid: ${request.session.user} | cid: ${clientId}`
-        );
+        // console.log(`${clientId} Connection closed`);
+        // console.log(
+        //     `[LOST CONNECTION] uid: ${request.session.user} | cid: ${clientId}`
+        // );
         if (clients.size === 0) {
             // doc.destroy();
             console.log(doc);
 
             // doc.unsubscribe(function (error) {
             // if (error) throw error;
-            console.log("docSessions.size", docSessions.size);
+            // console.log("docSessions.size", docSessions.size);
             docSessions.delete(docId);
-            console.log("---------------------------------------------------");
-            console.log(`${docId} session is now removed from session map. `);
-            console.log("docSessions.size", docSessions.size);
+            // console.log("---------------------------------------------------");
+            // console.log(`${docId} session is now removed from session map. `);
+            // console.log("docSessions.size", docSessions.size);
             // });
         } else {
-            console.log("---------------------------------------------------");
-            console.log(
-                "[USERS] Remaining Connected Users: ",
-                Array.from(docSessions.get(docId).clients).map(
-                    (i) => "uid: " + i.name + "| cid: " + i.id
-                )
-            );
-            console.log(
-                "[USERS] Updated Connected Users: ",
-                docSessions.get(docId).clients.size
-            );
-            console.log("---------------------------------------------------");
+            // console.log("---------------------------------------------------");
+            // console.log(
+            //     "[USERS] Remaining Connected Users: ",
+            //     Array.from(docSessions.get(docId).clients).map(
+            //         (i) => "uid: " + i.name + "| cid: " + i.id
+            //     )
+            // );
+            // console.log(
+            //     "[USERS] Updated Connected Users: ",
+            //     docSessions.get(docId).clients.size
+            // );
+            // console.log("---------------------------------------------------");
         }
     });
 }

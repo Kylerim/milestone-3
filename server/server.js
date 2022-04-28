@@ -162,7 +162,7 @@ function eventsHandler(request, response) {
 
         docSessions.set(docId, {
             doc: initialDoc,
-            elasticVersion: doc.version,
+            elasticVersion: initialDoc.version,
             clients: new Set(),
             queue,
         });

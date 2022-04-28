@@ -221,7 +221,9 @@ function eventsHandler(request, response) {
 
     // });
     request.on("close", () => {
-        updateIndex(docId, doc.data.ops);
+        if (doc && doc.data) {
+            updateIndex(docId, doc.data.ops);
+        }
         sendPresenceEventsToAll(request, docId, clientId, null);
         clients.delete(newClient);
 

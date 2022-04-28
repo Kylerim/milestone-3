@@ -181,7 +181,7 @@ function eventsHandler(request, response) {
     console.log("---------------------------------------------------");
     console.log("---------------------------------------------------");
 
-    console.warn(
+    console.log(
         `[NEW CONNECTION] uid: ${request.session.user} | cid: ${clientId}`
     );
 
@@ -193,14 +193,14 @@ function eventsHandler(request, response) {
         }
     });
     if (toAdd) {
-        console.warn("[USER CONNECTION] Adding: ", newClient.id);
+        console.log("[USER CONNECTION] Adding: ", newClient.id);
         clients.add(newClient);
     }
 
     // const newLocalPresence = presence.create(clientId);
     // newLocalPresence
     // localPresences.set(clientId, newLocalPresence);
-    console.warn(
+    console.log(
         "[USERS] Currently Connected Users: ",
         Array.from(clients).map((i) => "name: " + i.name + "| cid: " + i.id)
     );

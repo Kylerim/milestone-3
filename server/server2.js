@@ -1,8 +1,5 @@
 /* eslint no-console: ["error", { allow: ["warn", "error"] }] */
-Request.prototype.request = function () {
-    var self = this;
-    self.setMaxListeners(0);
-};
+// emitter.setMaxListeners(0);
 const WebSocket = require("ws");
 const express = require("express");
 var ShareDB = require("sharedb/lib/client");

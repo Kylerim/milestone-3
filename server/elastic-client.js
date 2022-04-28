@@ -80,12 +80,15 @@ app.get("/index/search", async (req, res) => {
             multi_match: {
                 query: query,
                 fields: ["title^2", "content"],
+                type: "phrase_prefix",
             },
         },
         highlight: {
             fields: {
                 content: {},
             },
+            boundary_max_scan: 50,
+            boundary_scanner: "sentence",
         },
     });
 

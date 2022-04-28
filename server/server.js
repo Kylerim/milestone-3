@@ -397,8 +397,9 @@ function queueCallback({ request, response }, completed) {
     }
 
     if (
-        docSessions.has(docId) &&
-        Math.abs(version - docSessions.get(docId).elasticVersion) > 20
+        docSessions.has(docId)
+        // &&
+        // Math.abs(version - docSessions.get(docId).elasticVersion) > 20
     ) {
         console.log(
             "Version of elastic: ",

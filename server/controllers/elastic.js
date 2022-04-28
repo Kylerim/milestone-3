@@ -15,6 +15,7 @@ const client = new Client({
 exports.createIndex = async function (id, title, content) {
     const result = await client.index({
         refresh: true,
+        _source: false,
         index: "documents",
         id,
         document: {
@@ -44,6 +45,8 @@ exports.updateIndex = async function (id, delta) {
     console.log("Updating content", content);
     const result = await client.update({
         refresh: true,
+        retry_on_conflict: 2,
+        _source: false,
         index: "documents",
         id: id,
         doc: {

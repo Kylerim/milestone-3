@@ -126,7 +126,7 @@ exports.suggestIndex = async (req, res) => {
     // res.json(result.hits);
     const ret = new Set();
     result.hits.hits.forEach((doc) => {
-        const splited = doc.split("<<>>");
+        const splited = doc.highlight.content[0].split("<<>>");
         splited.forEach((part) => {
             if (part.startsWith(query)) {
                 ret.add(part);

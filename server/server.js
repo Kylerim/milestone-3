@@ -1,5 +1,5 @@
 /* eslint no-console: ["error", { allow: ["warn", "error"] }] */
-
+process.setMaxListeners(0);
 // emitter.setMaxListeners(0);
 const WebSocket = require("ws");
 const express = require("express");

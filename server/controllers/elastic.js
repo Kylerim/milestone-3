@@ -112,8 +112,8 @@ exports.suggestIndex = async (req, res) => {
             prefix: { content: query },
         },
         highlight: {
-            pre_tags: "<",
-            post_tags: ">",
+            pre_tags: "<<>>",
+            post_tags: "<<>>",
             fields: {
                 content: {
                     fragment_size: 0,
@@ -123,7 +123,17 @@ exports.suggestIndex = async (req, res) => {
             },
         },
     });
-    res.json(result.hits);
+    // res.json(result.hits);
+    const ret = new Set();
+    result.hits.hits.forEach((doc) => {
+        const splited = doc.split("<<>>");
+        splited.forEach((part) => {
+            if (part.startsWith(query)) {
+                ret.add(part);
+            }
+        });
+    });
+    res.json(Array.from(ret));
 };
 
 // exports.suggestIndex = async (req, res) => {

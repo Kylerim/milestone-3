@@ -108,6 +108,7 @@ exports.suggestIndex = async (req, res) => {
     const query = req.query.q;
     console.log("Suggest query is", query);
     const result = await client.search({
+        size: 10,
         index: "documents",
         query: {
             prefix: { content: query },

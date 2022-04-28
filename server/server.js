@@ -141,26 +141,27 @@ function eventsHandler(request, response) {
 
     // if no active docsession, add to current doc session map
     if (!docSessions.has(docId)) {
-        const doc = connection.get("documents", docId);
+        const initialDoc = connection.get("documents", docId);
         const queue = async.queue(queueCallback, 1);
-        if (!doc.subscribed) {
+        if (!initialDoc.subscribed) {
             console.log();
-            doc.subscribe(function (err) {
+            initialDoc.subscribe(function (err) {
                 console.log("subscribed to ", docId);
                 if (err) throw err;
-                // doc.on('op', function (delta, source) {
-                //     // console.log("sending Presence back");
-                //     console.log(JSON.stringify(doc.data.ops));
-                //     // console.log(doc);
-                //     // console.log(docSessions.size);
-                //     sendOpToAll(request, docId, source, delta);
-
-                // });
+                initialDoc.on("op", function (delta, source) {
+                    // console.log("sending Presence back");
+                    console.log(JSON.stringify(doc.data.ops));
+                    // console.log(doc);
+                    // console.log(docSessions.size);
+                    sendOpToAll(docId, source, delta);
+                    sendAck(docId, source, delta);
+                    // sendOpToAll(request, docId, source, delta);
+                });
             });
         }
 
         docSessions.set(docId, {
-            doc,
+            doc: initialDoc,
             elasticVersion: doc.version,
             clients: new Set(),
             queue,
@@ -262,12 +263,12 @@ function eventsHandler(request, response) {
     });
 }
 
-function sendOpToAll(request, docId, connectionId, data) {
-    if (!request.session.user) {
-        ////response.setHeader('X-CSE356', GROUP_ID);
-        response.json({ error: true, message: "Not logged in" });
-        return;
-    }
+function sendOpToAll(docId, connectionId, data) {
+    // if (!request.session.user) {
+    //     ////response.setHeader('X-CSE356', GROUP_ID);
+    //     response.json({ error: true, message: "Not logged in" });
+    //     return;
+    // }
     if (!docSessions.get(docId)) {
         response.json({
             error: true,
@@ -307,12 +308,12 @@ function sendOpToAll(request, docId, connectionId, data) {
     }
 }
 
-function sendAck(request, docId, connectionId, data, version) {
-    if (!request.session.user) {
-        ////response.setHeader('X-CSE356', GROUP_ID);
-        response.json({ error: true, message: "Not logged in" });
-        return;
-    }
+function sendAck(docId, connectionId, data) {
+    // if (!request.session.user) {
+    //     ////response.setHeader('X-CSE356', GROUP_ID);
+    //     response.json({ error: true, message: "Not logged in" });
+    //     return;
+    // }
     if (!docSessions.get(docId)) {
         response.json({
             error: true,
@@ -329,8 +330,7 @@ function sendAck(request, docId, connectionId, data, version) {
             console.log(
                 "[ACK] Sending TO (itself):",
                 connectionId,
-                "  [Version]: ",
-                version
+                "  [Version]: "
             );
             console.log(`Ack Data: ${JSON.stringify(ackData.ack)}`);
         }
@@ -434,8 +434,7 @@ function queueCallback({ request, response }, completed) {
         //     return;
         // } else {
         //     flag = true;
-        sendOpToAll(request, docId, connectionId, content);
-        sendAck(request, docId, connectionId, content, version);
+
         doc.submitOp(content, { source: connectionId }, (err) => {
             if (err) {
                 console.log(

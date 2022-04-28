@@ -132,6 +132,7 @@ function eventsHandler(request, response) {
         "X-CSE356": GROUP_ID,
     };
     response.writeHead(200, headers);
+    response.write();
     if (!request.session.user) {
         response.json({ error: true, message: "Not logged in" });
         return;

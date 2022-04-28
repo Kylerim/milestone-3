@@ -26,10 +26,10 @@ const {
     websocketServer,
 } = require("./common.js");
 
-// if (IS_PRODUCTION_MODE) {
-//     console = console || {};
-//     console.log = function () {};
-// }
+if (IS_PRODUCTION_MODE) {
+    console = console || {};
+    console.log = function () {};
+}
 const {
     adduser,
     login,
@@ -454,7 +454,7 @@ function queueCallback({ request, response }, completed) {
         //     flag = true;
 
         docSessions.get(docId).elasticVersion = version;
-        docSessions.get(docId).isTouched = false;
+        docSessions.get(docId).isTouched = true;
         doc.submitOp(content, { source: connectionId }, (err) => {
             if (err) {
                 console.log(

@@ -455,7 +455,7 @@ function queueCallback({ request, response }, completed) {
         //     flag = true;
 
         docSessions.get(docId).elasticVersion = version;
-        docSessions.get(docId).isTouched = false;
+        docSessions.get(docId).isTouched = true;
         doc.submitOp(content, { source: connectionId }, (err) => {
             if (err) {
                 console.log(

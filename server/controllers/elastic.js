@@ -74,7 +74,7 @@ exports.searchIndex = async (req, res) => {
         // },
         query: {
             multi_match: {
-                type: "cross_fields",
+                type: "phrase",
                 query: query,
                 fields: ["title", "content"],
             },

@@ -270,11 +270,11 @@ function sendUpdateToElastic(docId) {
     if (docSessions.has(docId) && docSessions.get(docId).isTouched) {
         console.log(
             "Version of elastic: ",
-            docSessions.get(docId).elasticVersion,
-            " Version:",
-            version
+            docSessions.get(docId).elasticVersion
+            //     " Version:",
+            //     version
         );
-        docSessions.get(docId).elasticVersion = version;
+        // docSessions.get(docId).elasticVersion = version;
         updateIndex(docId, doc.data.ops);
         docSessions.get(docId).isTouched = false;
     }
@@ -453,6 +453,7 @@ function queueCallback({ request, response }, completed) {
         // } else {
         //     flag = true;
 
+        docSessions.get(docId).elasticVersion = version;
         docSessions.get(docId).isTouched = false;
         doc.submitOp(content, { source: connectionId }, (err) => {
             if (err) {

@@ -26,10 +26,10 @@ const {
     websocketServer,
 } = require("./common.js");
 
-// if (IS_PRODUCTION_MODE) {
-//     console = console || {};
-//     console.log = function () {};
-// }
+if (IS_PRODUCTION_MODE) {
+    console = console || {};
+    console.log = function () {};
+}
 const {
     adduser,
     login,

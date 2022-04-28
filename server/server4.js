@@ -388,10 +388,10 @@ function queueCallback({ request, response }, completed) {
     let doc = connection.get("documents", docId);
     let content = request.body.op;
     let version = request.body.version;
-    let remaining = 0;
-    if (docSessions.has(docId)) {
-        remaining = docSessions.get(docId).queue.length;
-    }
+    // let remaining = 0;
+    // if (docSessions.has(docId)) {
+    //     remaining = docSessions.get(docId).queue.length;
+    // }
 
     if (
         docSessions.has(docId) &&
@@ -416,7 +416,7 @@ function queueCallback({ request, response }, completed) {
 
     if (version < doc.version) {
         console.log("Sending retry back");
-        completed(null, { connectionId, remaining });
+        completed(null, { connectionId });
         response.json({ status: "retry" });
         response.end();
         return;
@@ -430,8 +430,7 @@ function queueCallback({ request, response }, completed) {
         //     return;
         // } else {
         //     flag = true;
-        sendOpToAll(request, docId, connectionId, content);
-        sendAck(request, docId, connectionId, content, version);
+
         doc.submitOp(content, { source: connectionId }, (err) => {
             if (err) {
                 console.log(
@@ -455,8 +454,9 @@ function queueCallback({ request, response }, completed) {
                 );
                 console.log("Content: ", content);
                 console.log("Preparing to send acknowledgement back...");
-
-                completed(null, { connectionId, remaining });
+                sendOpToAll(request, docId, connectionId, content);
+                sendAck(request, docId, connectionId, content, version);
+                completed(null, { connectionId });
                 // flag = false;
                 response.json({ status: "ok" });
                 response.end();
@@ -487,12 +487,12 @@ function handleUpdateOpsQueue(request, response) {
         return;
     }
     const queue = docSessions.get(docId).queue;
-    queue.push({ request, response }, (error, { connectionId, remaining }) => {
+    queue.push({ request, response }, (error, { connectionId }) => {
         if (error) {
             console.log(`An error occurred while processing task ${task}`);
         } else {
             console.log(`Finished processing task ${connectionId}
-                   . ${remaining} tasks remaining`);
+                   tasks remaining`);
         }
     });
 }

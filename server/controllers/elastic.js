@@ -82,7 +82,7 @@ exports.searchIndex = async (req, res) => {
         highlight: {
             fields: {
                 content: {
-                    fragment_size: 300,
+                    fragment_size: 0,
                 },
             },
             boundary_scanner: "sentence",

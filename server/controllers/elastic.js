@@ -80,11 +80,7 @@ exports.searchIndex = async (req, res) => {
         },
         highlight: {
             fields: {
-                content: {
-                    fragment_size: 300,
-                    number_of_fragments: 1,
-                    boundary_chars: "",
-                },
+                content: {},
             },
         },
     });

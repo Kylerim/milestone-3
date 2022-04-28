@@ -225,6 +225,7 @@ function eventsHandler(request, response) {
         }
     });
     request.on("close", () => {
+        updateIndex(docId, doc.data.ops);
         sendPresenceEventsToAll(request, docId, clientId, null);
         clients.delete(newClient);
 
@@ -235,7 +236,7 @@ function eventsHandler(request, response) {
         if (clients.size === 0) {
             // doc.destroy();
             console.log(doc);
-            updateIndex(docId, doc.data.ops);
+
             // doc.unsubscribe(function (error) {
             // if (error) throw error;
             console.log("docSessions.size", docSessions.size);
@@ -397,9 +398,8 @@ function queueCallback({ request, response }, completed) {
     }
 
     if (
-        docSessions.has(docId)
-        // &&
-        // Math.abs(version - docSessions.get(docId).elasticVersion) > 20
+        docSessions.has(docId) &&
+        Math.abs(version - docSessions.get(docId).elasticVersion) > 5
     ) {
         console.log(
             "Version of elastic: ",
@@ -434,6 +434,8 @@ function queueCallback({ request, response }, completed) {
         //     return;
         // } else {
         //     flag = true;
+        sendOpToAll(request, docId, connectionId, content);
+        sendAck(request, docId, connectionId, content, version);
         doc.submitOp(content, { source: connectionId }, (err) => {
             if (err) {
                 console.log(
@@ -457,8 +459,7 @@ function queueCallback({ request, response }, completed) {
                 );
                 console.log("Content: ", content);
                 console.log("Preparing to send acknowledgement back...");
-                sendOpToAll(request, docId, connectionId, content);
-                sendAck(request, docId, connectionId, content, version);
+
                 completed(null, { connectionId, remaining });
                 // flag = false;
                 response.json({ status: "ok" });

@@ -25,7 +25,7 @@ const {
 } = require("./common.js");
 
 if (IS_PRODUCTION_MODE) {
-    console = console || {};
+    // console = console || {};
     console.log = function () {};
 }
 const {
@@ -181,7 +181,7 @@ function eventsHandler(request, response) {
     console.log("---------------------------------------------------");
     console.log("---------------------------------------------------");
 
-    console.log(
+    console.warn(
         `[NEW CONNECTION] uid: ${request.session.user} | cid: ${clientId}`
     );
 
@@ -193,14 +193,14 @@ function eventsHandler(request, response) {
         }
     });
     if (toAdd) {
-        console.log("[USER CONNECTION] Adding: ", newClient.id);
+        console.warn("[USER CONNECTION] Adding: ", newClient.id);
         clients.add(newClient);
     }
 
     // const newLocalPresence = presence.create(clientId);
     // newLocalPresence
     // localPresences.set(clientId, newLocalPresence);
-    console.log(
+    console.warn(
         "[USERS] Currently Connected Users: ",
         Array.from(clients).map((i) => "name: " + i.name + "| cid: " + i.id)
     );

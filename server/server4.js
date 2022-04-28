@@ -266,6 +266,7 @@ function eventsHandler(request, response) {
 
 function sendUpdateToElastic(docId) {
     let doc = connection.get("documents", docId);
+    console.log("setInterval triggered");
 
     if (docSessions.has(docId) && docSessions.get(docId).isTouched) {
         console.log(

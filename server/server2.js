@@ -46,7 +46,7 @@ const {
 const { Document } = require("./models/Document");
 // const { getDocLists } = require('./controllers/documents');
 
-const PORT = IS_PRODUCTION_MODE ? 5002 : 5002;
+const PORT = IS_PRODUCTION_MODE ? 5002 : 5001;
 //const PORT = 5001;
 const IP = IS_PRODUCTION_MODE ? PROD_IP : LOCAL_IP;
 
@@ -132,6 +132,7 @@ function eventsHandler(request, response) {
         "X-CSE356": GROUP_ID,
     };
     response.writeHead(200, headers);
+    response.write(`data:[]\n\n`);
     if (!request.session.user) {
         response.json({ error: true, message: "Not logged in" });
         return;

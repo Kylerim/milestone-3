@@ -74,6 +74,7 @@ exports.searchIndex = async (req, res) => {
         // },
         query: {
             multi_match: {
+                type: "bool_prefix",
                 query: query,
                 fields: ["title", "content"],
             },

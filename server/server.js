@@ -486,7 +486,7 @@ function updateOpsQueue(request, response) {
 
     if (version < doc.version) {
         console.log("Sending retry back");
-        completed(null, { connectionId });
+        // completed(null, { connectionId });
         response.json({ status: "retry" });
         response.end();
         return;
@@ -526,7 +526,7 @@ function updateOpsQueue(request, response) {
                     // console.log("Preparing to send acknowledgement back...");
                     sendOpToAll(request, docId, connectionId, content);
                     sendAck(request, docId, connectionId, content, version);
-                    completed(null, { connectionId });
+                    // completed(null, { connectionId });
                     docSessions.get(docId).isBeingProcessed = false;
                     response.json({ status: "ok" });
                     response.end();

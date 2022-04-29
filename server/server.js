@@ -100,25 +100,6 @@ if (IS_PRODUCTION_MODE) {
     app.use(cors({ credentials: true, origin: true }));
 }
 
-app.get("/media/access/:id", (request, response, next) => {
-    if (!request.session.user) {
-        response.json({
-            error: true,
-            message: "Not logged in?????" + JSON.stringify(request.session),
-        });
-        return;
-    }
-
-    var fileName = request.params.id;
-    response.setHeader("Content-Type", mime.getType(fileName));
-    console.log(
-        `[MEDIA ACCESS]: ${fileName}`,
-        `From ${request.session.user},  FileType: ${mime.getType(fileName)}`
-    );
-
-    response.sendFile(path.join(__dirname, "/media/access/" + fileName));
-});
-
 //ShareDB Connection
 ShareDB.types.register(richText.type);
 const socket = new WebSocket(websocketServer);
@@ -147,20 +128,12 @@ function eventsHandler(request, response) {
     // if no active docsession, add to current doc session map
     if (!docSessions.has(docId)) {
         const doc = connection.get("documents", docId);
-        const queue = async.queue(queueCallback, 1);
+        // const queue = async.queue(queueCallback, 1);
         if (!doc.subscribed) {
             console.log();
             doc.subscribe(function (err) {
-                console.log("subscribed to ", docId);
+                console.log("Subscribed to ", docId);
                 if (err) throw err;
-                // doc.on('op', function (delta, source) {
-                //     // console.log("sending Presence back");
-                //     console.log(JSON.stringify(doc.data.ops));
-                //     // console.log(doc);
-                //     // console.log(docSessions.size);
-                //     sendOpToAll(request, docId, source, delta);
-
-                // });
             });
         }
 
@@ -168,10 +141,9 @@ function eventsHandler(request, response) {
             doc,
             elasticVersion: doc.version,
             clients: new Set(),
-            queue,
-            // isBeingProcessed: false,
+            // queue,
+            isBeingProcessed: false,
         });
-        // console.log("docSessions.size", docSessions.size);
     }
 
     // read a docsession given a docId
@@ -193,18 +165,10 @@ function eventsHandler(request, response) {
 
     //push if not exist
     if (!clients.has(clientId)) {
-        // console.log("[USER CONNECTION] Adding: ", newClient.id);
         clients.add(newClient);
     }
 
-    // const newLocalPresence = presence.create(clientId);
-    // newLocalPresence
-    // localPresences.set(clientId, newLocalPresence);
-    // console.log(
-    //     "[USERS] Currently Connected Users: ",
-    //     Array.from(clients).map((i) => "name: " + i.name + "| cid: " + i.id)
-    // );
-    // console.log("[USERS] Connected Users: ", clients.size);
+    console.log("[USERS] Connected Users: ", clients.size);
     // console.log("---------------------------------------------------");
     // console.log("---------------------------------------------------");
 
@@ -238,8 +202,6 @@ function eventsHandler(request, response) {
         // );
         if (clients.size === 0) {
             // doc.destroy();
-            console.log(doc);
-
             doc.unsubscribe(function (error) {
                 if (error) throw error;
                 console.log("docSessions.size", docSessions.size);
@@ -288,23 +250,7 @@ function sendOpToAll(request, docId, connectionId, data) {
                 client.response.write(`data: ${JSON.stringify(data)}\n\n`);
                 console.log(`data: ${JSON.stringify(data)}`);
             }
-            // else {
-            //     const ackData = { "ack": data };
-            //     console.log("[ACK] Sending TO (itself): ", client.id)
-            //     client.response.write(`data: ${JSON.stringify(ackData)}\n\n`)
-            //     console.log(`data: ${JSON.stringify(ackData)}`)
-            // }
         });
-        // setTimeout(() => {
-        //     clients.forEach(client => {
-        //         if (client.id == connectionId) {
-        //             const ackData = { "ack": data };
-        //             console.log("[ACK] Sending TO (itself): ", client.id)
-        //             client.response.write(`data: ${JSON.stringify(ackData)}\n\n`)
-        //             console.log(`data: ${JSON.stringify(ackData)}`)
-        //         }
-        //     });
-        // }, 100);
     } catch (e) {
         console.log(e);
     }
@@ -341,7 +287,7 @@ function sendAck(request, docId, connectionId, data, version) {
 }
 
 function sendPresenceEventsToAll(request, docId, connectionId, cursor) {
-    console.log("[PRESENCE] Sending to all... FROM:", connectionId);
+    // console.log("[PRESENCE] Sending to all... FROM:", connectionId);
     if (!docSessions.get(docId)) {
         return;
     }
@@ -361,28 +307,146 @@ function sendPresenceEventsToAll(request, docId, connectionId, cursor) {
             cursor: cursor,
         },
     };
-    console.log(JSON.stringify(data));
 
     try {
         clients.forEach((client) => {
             if (client.id != connectionId) {
-                console.log("[PRESENCE] Sending... TO:", client.id);
+                // console.log("[PRESENCE] Sending... TO:", client.id);
                 client.response.write(`data: ${JSON.stringify(data)}\n\n`);
                 // console.log(`data: ${JSON.stringify(presence)}`)
             }
         });
+        console.log("[Presences Sent]");
     } catch (e) {
         console.log(e);
     }
 }
 
-// let flag = false;
-function queueCallback({ request, response }, completed) {
-    console.log(
-        "Currently Busy Processing Task " + request.params.connectionId
-    );
-    // updateOps(request, response);
-    // const remaining = queue.length();
+// function queueCallback({ request, response }, completed) {
+//     console.log(
+//         "Currently Busy Processing Task " + request.params.connectionId
+//     );
+//     // updateOps(request, response);
+//     // const remaining = queue.length();
+
+//     if (!request.session.user) {
+//         //response.setHeader('X-CSE356', GROUP_ID);
+//         response.json({ error: true, message: "Not logged in" });
+//         return;
+//     }
+
+//     let connectionId = request.params.connectionId;
+//     let docId = request.params.docId;
+//     let doc = connection.get("documents", docId);
+//     let content = request.body.op;
+//     let version = request.body.version;
+//     // let remaining = 0;
+//     // if (docSessions.has(docId)) {
+//     //     remaining = docSessions.get(docId).queue.length;
+//     // }
+
+//     if (
+//         docSessions.has(docId) &&
+//         Math.abs(version - docSessions.get(docId).elasticVersion) > 5
+//     ) {
+//         console.log(
+//             "Version of elastic: ",
+//             docSessions.get(docId).elasticVersion,
+//             " Version:",
+//             version
+//         );
+//         docSessions.get(docId).elasticVersion = version;
+//         updateIndex(docId, doc.data.ops);
+//     }
+//     console.log("******************************************");
+//     console.log("******************************************");
+
+//     // console.log("VERSION OP : ", version, "VERSION DOC : ", doc.version);
+//     // console.log("FROM: ", JSON.stringify(connectionId));
+//     // console.log("CONTENT: ", JSON.stringify(content));
+//     // console.log("------------------------------------------");
+
+//     if (version < doc.version) {
+//         console.log("Sending retry back");
+//         completed(null, { connectionId });
+//         response.json({ status: "retry" });
+//         response.end();
+//         return;
+//     } else if (version == doc.version) {
+//         console.log("Version Ok. Preparing to submit doc...");
+
+//         if (docSessions.get(docId).isBeingProcessed) {
+//             console.log("[ERROR] Doc is busy. Sending retry back");
+//             response.json({ status: "retry" });
+//             response.end();
+//             return;
+//         } else {
+//             docSessions.get(docId).isBeingProcessed = true;
+
+//             doc.submitOp(content, { source: connectionId }, (err) => {
+//                 if (err) {
+//                     console.log(
+//                         "Unable to submit OP to sharedb: ",
+//                         JSON.stringify(err)
+//                     );
+//                     // response.setHeader('X-CSE356', GROUP_ID);
+//                     response.json({
+//                         error: true,
+//                         message: "Failed to update ops",
+//                     });
+//                     response.end();
+//                     return;
+//                     // EDIT THE VERSIONS
+//                 } else {
+//                     console.log(
+//                         "OP Submission to Sharedb Complete. From: ",
+//                         connectionId,
+//                         "Version: ",
+//                         version
+//                     );
+//                     // console.log("Content: ", content);
+//                     // console.log("Preparing to send acknowledgement back...");
+//                     sendOpToAll(request, docId, connectionId, content);
+//                     sendAck(request, docId, connectionId, content, version);
+//                     completed(null, { connectionId });
+//                     docSessions.get(docId).isBeingProcessed = false;
+//                     response.json({ status: "ok" });
+//                     response.end();
+//                     return;
+//                 }
+//             });
+//         }
+//     } else {
+//         console.log("[VERSION ERROR]: Client is ahead of server");
+//         response.json({
+//             error: true,
+//             message: "Client is ahead of server ",
+//         });
+//         response.end();
+//         return;
+//     }
+
+//     // const connectionId = request.params.connectionId;
+// }
+
+function updateOpsQueue(request, response) {
+    const docId = request.params.docId;
+    if (!docSessions.has(docId)) {
+        response.json({
+            error: true,
+            message: "Document does not exit anymore",
+        });
+        return;
+    }
+    // const queue = docSessions.get(docId).queue;
+    // queue.push({ request, response }, (error, { connectionId }) => {
+    //     if (error) {
+    //         console.log(`An error occurred while processing task ${task}`);
+    //     } else {
+    //         console.log(`Finished processing task ${connectionId}
+    //                tasks remaining`);
+    //     }
+    // });
 
     if (!request.session.user) {
         //response.setHeader('X-CSE356', GROUP_ID);
@@ -391,7 +455,6 @@ function queueCallback({ request, response }, completed) {
     }
 
     let connectionId = request.params.connectionId;
-    let docId = request.params.docId;
     let doc = connection.get("documents", docId);
     let content = request.body.op;
     let version = request.body.version;
@@ -430,80 +493,56 @@ function queueCallback({ request, response }, completed) {
     } else if (version == doc.version) {
         console.log("Version Ok. Preparing to submit doc...");
 
-        // if (docSessions.get(docId).isBeingProcessed) {
-        //     console.log("[ERROR] Doc is busy. Sending retry back");
-        //     response.json({ status: "retry" });
-        //     response.end();
-        //     return;
-        // } else {
-        // docSessions.get(docId).isBeingProcessed = true;
+        if (docSessions.get(docId).isBeingProcessed) {
+            console.log("[ERROR] Doc is busy. Sending retry back");
+            response.json({ status: "retry" });
+            response.end();
+            return;
+        } else {
+            docSessions.get(docId).isBeingProcessed = true;
 
-        doc.submitOp(content, { source: connectionId }, (err) => {
-            if (err) {
-                console.log(
-                    "Unable to submit OP to sharedb: ",
-                    JSON.stringify(err)
-                );
-                // response.setHeader('X-CSE356', GROUP_ID);
-                response.json({
-                    error: true,
-                    message: "Failed to update ops",
-                });
-                response.end();
-                return;
-                // EDIT THE VERSIONS
-            } else {
-                console.log(
-                    "OP Submission to Sharedb Complete. From: ",
-                    connectionId,
-                    "Version: ",
-                    version
-                );
-                // console.log("Content: ", content);
-                // console.log("Preparing to send acknowledgement back...");
-                sendOpToAll(request, docId, connectionId, content);
-                sendAck(request, docId, connectionId, content, version);
-                completed(null, { connectionId });
-                // flag = false;
-                // docSessions.get(docId).isBeingProcessed = false;
-                response.json({ status: "ok" });
-                response.end();
-                return;
-            }
-        });
-        //   }
-        //  }
+            doc.submitOp(content, { source: connectionId }, (err) => {
+                if (err) {
+                    console.log(
+                        "Unable to submit OP to sharedb: ",
+                        JSON.stringify(err)
+                    );
+                    // response.setHeader('X-CSE356', GROUP_ID);
+                    response.json({
+                        error: true,
+                        message: "Failed to update ops",
+                    });
+                    response.end();
+                    return;
+                    // EDIT THE VERSIONS
+                } else {
+                    console.log(
+                        "OP Submission to Sharedb Complete. From: ",
+                        connectionId,
+                        "Version: ",
+                        version
+                    );
+                    // console.log("Content: ", content);
+                    // console.log("Preparing to send acknowledgement back...");
+                    sendOpToAll(request, docId, connectionId, content);
+                    sendAck(request, docId, connectionId, content, version);
+                    completed(null, { connectionId });
+                    docSessions.get(docId).isBeingProcessed = false;
+                    response.json({ status: "ok" });
+                    response.end();
+                    return;
+                }
+            });
+        }
     } else {
         console.log("[VERSION ERROR]: Client is ahead of server");
         response.json({
             error: true,
-            message: "Client is ahead of server ",
+            message: "[Impossible] Client is ahead of server",
         });
         response.end();
         return;
     }
-
-    // const connectionId = request.params.connectionId;
-}
-
-function handleUpdateOpsQueue(request, response) {
-    const docId = request.params.docId;
-    if (!docSessions.has(docId)) {
-        response.json({
-            error: true,
-            message: "Document does not exit anymore",
-        });
-        return;
-    }
-    const queue = docSessions.get(docId).queue;
-    queue.push({ request, response }, (error, { connectionId }) => {
-        if (error) {
-            console.log(`An error occurred while processing task ${task}`);
-        } else {
-            console.log(`Finished processing task ${connectionId}
-                   tasks remaining`);
-        }
-    });
 }
 
 function updateCursor(request, response) {
@@ -516,7 +555,7 @@ function updateCursor(request, response) {
     const docId = request.params.docId;
 
     const doc = docSessions.get(docId).doc;
-    console.log("[PRESENCE] New Presence Info Received");
+    // console.log("[PRESENCE] New Presence Info Received");
     console.log(request.body);
     const cursor = request.body;
 
@@ -538,6 +577,8 @@ function updateCursor(request, response) {
     //         // EDIT THE VERSIONS
     //     }
     // })
+    console.log("[Cursor] Update Completed ");
+
     response.json({});
     response.end();
     return;
@@ -690,6 +731,25 @@ function getDocLists(req, res) {
 
 //img uploads---------------------------------
 
+app.get("/media/access/:id", (request, response, next) => {
+    if (!request.session.user) {
+        response.json({
+            error: true,
+            message: "Not logged in: " + JSON.stringify(request.session),
+        });
+        return;
+    }
+
+    var fileName = request.params.id;
+    response.setHeader("Content-Type", mime.getType(fileName));
+    console.log(
+        `[MEDIA ACCESS]: ${fileName}`,
+        `From ${request.session.user},  FileType: ${mime.getType(fileName)}`
+    );
+
+    response.sendFile(path.join(__dirname, "/media/access/" + fileName));
+});
+
 const storage = multer.diskStorage({
     destination: path.join("./media/access"),
     filename: function (req, file, cb) {
@@ -747,7 +807,7 @@ app.post("/collection/create", createDoc);
 app.post("/collection/delete", deleteDoc);
 app.get("/collection/list", getDocLists);
 
-app.post("/doc/op/:docId/:connectionId", handleUpdateOpsQueue);
+app.post("/doc/op/:docId/:connectionId", updateOpsQueue);
 app.post("/media/upload", uploadImage);
 app.post("/users/signup", adduser);
 app.post("/users/login", login);

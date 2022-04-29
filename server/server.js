@@ -26,10 +26,10 @@ const {
     websocketServer,
 } = require("./common.js");
 
-//if (IS_PRODUCTION_MODE) {
-//     console = console || {};
-//     console.log = function () {};
-// }
+if (IS_PRODUCTION_MODE) {
+    console = console || {};
+    console.log = function () {};
+}
 const {
     adduser,
     login,
@@ -276,7 +276,6 @@ function sendUpdateToElastic() {
             );
             // docSessions.get(docId).elasticVersion = version;
             let doc = connection.get("documents", docId);
-            console.log(doc.data);
             updateIndex(docId, doc.data.ops);
             docSession.isTouched = false;
         }

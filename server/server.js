@@ -785,7 +785,7 @@ if (IS_PRODUCTION_MODE) {
     PORT.forEach((port) => {
         app.listen(port, IP, () =>
             console.log(
-                `[PRODUCTION MODE] CSE356 Milestone 2: listening on port ${PORT}`
+                `[PRODUCTION MODE] CSE356 Milestone 2: listening on port ${port}`
             )
         );
     });

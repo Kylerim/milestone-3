@@ -26,8 +26,8 @@ const {
     GROUP_ID,
     websocketServer,
 } = require("./common.js");
-
-if (IS_PRODUCTION_MODE) {
+const isSlient = args.indexOf("-s") > -1;
+if (isSlient) {
     console = console || {};
     console.log = function () {};
 }

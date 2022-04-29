@@ -2,6 +2,7 @@ const { Client } = require("@elastic/elasticsearch");
 const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("../common.js");
 const QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
+const fastify = require("fastify");
 
 const { convert } = require("html-to-text");
 const client = new Client({
@@ -42,7 +43,16 @@ exports.updateIndex = async function (id, delta) {
     });
     // const content = toPlaintext(delta);
     console.log("Updating content", content);
-    const result = await client.update({
+    // const result = await client.update({
+    //     refresh: true,
+    //     retry_on_conflict: 2,
+    //     index: "documents",
+    //     id: id,
+    //     doc: {
+    //         content: content,
+    //     },
+    // });
+    const { body } = await client.update({
         refresh: true,
         retry_on_conflict: 2,
         index: "documents",
@@ -50,9 +60,11 @@ exports.updateIndex = async function (id, delta) {
         doc: {
             content: content,
         },
+        asStream: true,
+        meta: true,
     });
 
-    return result;
+    return body;
 };
 
 exports.searchIndex = async (req, res) => {

@@ -1,4 +1,4 @@
-onst { Client } = require("@elastic/elasticsearch");
+const { Client } = require("@elastic/elasticsearch");
 const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("../common.js");
 const QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;

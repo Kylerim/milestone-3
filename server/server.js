@@ -147,7 +147,7 @@ function eventsHandler(request, response) {
     // if no active docsession, add to current doc session map
     if (!docSessions.has(docId)) {
         const doc = connection.get("documents", docId);
-        const queue = async.queue(queueCallback, 10);
+        const queue = async.queue(queueCallback, 4);
         if (!doc.subscribed) {
             console.log();
             doc.subscribe(function (err) {
@@ -416,10 +416,10 @@ function queueCallback({ request, response }, completed) {
     console.log("******************************************");
     console.log("******************************************");
 
-    console.log("VERSION OP : ", version, "VERSION DOC : ", doc.version);
-    console.log("FROM: ", JSON.stringify(connectionId));
-    console.log("CONTENT: ", JSON.stringify(content));
-    console.log("------------------------------------------");
+    // console.log("VERSION OP : ", version, "VERSION DOC : ", doc.version);
+    // console.log("FROM: ", JSON.stringify(connectionId));
+    // console.log("CONTENT: ", JSON.stringify(content));
+    // console.log("------------------------------------------");
 
     if (version < doc.version) {
         console.log("Sending retry back");
@@ -459,8 +459,8 @@ function queueCallback({ request, response }, completed) {
                         "Version: ",
                         version
                     );
-                    console.log("Content: ", content);
-                    console.log("Preparing to send acknowledgement back...");
+                    // console.log("Content: ", content);
+                    // console.log("Preparing to send acknowledgement back...");
                     sendOpToAll(request, docId, connectionId, content);
                     sendAck(request, docId, connectionId, content, version);
                     completed(null, { connectionId });

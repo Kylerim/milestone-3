@@ -147,7 +147,7 @@ function eventsHandler(request, response) {
     // if no active docsession, add to current doc session map
     if (!docSessions.has(docId)) {
         const doc = connection.get("documents", docId);
-        const queue = async.queue(queueCallback, 1);
+        const queue = async.queue(queueCallback, 10);
         if (!doc.subscribed) {
             console.log();
             doc.subscribe(function (err) {
@@ -169,6 +169,7 @@ function eventsHandler(request, response) {
             elasticVersion: doc.version,
             clients: new Set(),
             queue,
+            isBeingProcessed: false,
         });
         // console.log("docSessions.size", docSessions.size);
     }
@@ -429,47 +430,49 @@ function queueCallback({ request, response }, completed) {
     } else if (version == doc.version) {
         console.log("Version Ok. Preparing to submit doc...");
 
-        // if (flag) {
-        //     console.log("[ERROR] Doc is busy. Sending retry back");
-        //     response.json({ status: "retry" });
-        //     response.end();
-        //     return;
-        // } else {
-        //     flag = true;
+        if (docSessions.get(docId).isBeingProcessed) {
+            console.log("[ERROR] Doc is busy. Sending retry back");
+            response.json({ status: "retry" });
+            response.end();
+            return;
+        } else {
+            docSessions.get(docId).isBeingProcessed = true;
 
-        doc.submitOp(content, { source: connectionId }, (err) => {
-            if (err) {
-                console.log(
-                    "Unable to submit OP to sharedb: ",
-                    JSON.stringify(err)
-                );
-                // response.setHeader('X-CSE356', GROUP_ID);
-                response.json({
-                    error: true,
-                    message: "Failed to update ops",
-                });
-                response.end();
-                return;
-                // EDIT THE VERSIONS
-            } else {
-                console.log(
-                    "OP Submission to Sharedb Complete. From: ",
-                    connectionId,
-                    "Version: ",
-                    version
-                );
-                console.log("Content: ", content);
-                console.log("Preparing to send acknowledgement back...");
-                sendOpToAll(request, docId, connectionId, content);
-                sendAck(request, docId, connectionId, content, version);
-                completed(null, { connectionId });
-                // flag = false;
-                response.json({ status: "ok" });
-                response.end();
-                return;
-            }
-        });
-        //   }
+            doc.submitOp(content, { source: connectionId }, (err) => {
+                if (err) {
+                    console.log(
+                        "Unable to submit OP to sharedb: ",
+                        JSON.stringify(err)
+                    );
+                    // response.setHeader('X-CSE356', GROUP_ID);
+                    response.json({
+                        error: true,
+                        message: "Failed to update ops",
+                    });
+                    response.end();
+                    return;
+                    // EDIT THE VERSIONS
+                } else {
+                    console.log(
+                        "OP Submission to Sharedb Complete. From: ",
+                        connectionId,
+                        "Version: ",
+                        version
+                    );
+                    console.log("Content: ", content);
+                    console.log("Preparing to send acknowledgement back...");
+                    sendOpToAll(request, docId, connectionId, content);
+                    sendAck(request, docId, connectionId, content, version);
+                    completed(null, { connectionId });
+                    // flag = false;
+                    docSessions.get(docId).isBeingProcessed = false;
+                    response.json({ status: "ok" });
+                    response.end();
+                    return;
+                }
+            });
+            //   }
+        }
     } else {
         console.log("[VERSION ERROR]: Client is ahead of server");
         response.json({

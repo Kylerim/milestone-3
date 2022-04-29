@@ -125,6 +125,7 @@ const connection = new ShareDB.Connection(socket);
 let docSessions = new Map();
 let names = new Map();
 
+setInterval(sendUpdateToElastic, 1000);
 //EVENT STREAM
 function eventsHandler(request, response) {
     const headers = {
@@ -162,14 +163,12 @@ function eventsHandler(request, response) {
             });
         }
 
-        const timer = setInterval(sendUpdateToElastic, 1000, docId);
         docSessions.set(docId, {
             doc,
             elasticVersion: doc.version,
             clients: new Set(),
             queue,
             isTouched: false,
-            timer: timer,
             isBeingProcessed: false,
         });
         // console.log("docSessions.size", docSessions.size);
@@ -246,7 +245,6 @@ function eventsHandler(request, response) {
                 console.log("docSessions.size", docSessions.size);
                 let docSession = docSessions.get(docId);
                 docSession.queue = null;
-                clearInterval(docSession.timer);
                 docSessions.delete(docId);
                 // console.log("---------------------------------------------------");
                 // console.log(`${docId} session is now removed from session map. `);
@@ -269,21 +267,18 @@ function eventsHandler(request, response) {
     });
 }
 
-function sendUpdateToElastic(docId) {
-    let doc = connection.get("documents", docId);
+function sendUpdateToElastic() {
     console.log("setInterval triggered");
 
-    if (docSessions.has(docId) && docSessions.get(docId).isTouched) {
-        console.log(
-            "Version of elastic: ",
-            docSessions.get(docId).elasticVersion
-            //     " Version:",
-            //     version
-        );
-        // docSessions.get(docId).elasticVersion = version;
-        updateIndex(docId, doc.data.ops);
-        docSessions.get(docId).isTouched = false;
-    }
+    docSessions.forEach((docSession) => {
+        if (docSession.isTouched) {
+            console.log("Version of elastic: ", docSession.elasticVersion);
+            // docSessions.get(docId).elasticVersion = version;
+            let doc = connection.get("documents", docSession.docId);
+            updateIndex(docSession.docId, doc.data.ops);
+            docSession.isTouched = false;
+        }
+    });
 }
 
 function sendOpToAll(request, docId, connectionId, data) {

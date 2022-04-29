@@ -16,7 +16,7 @@ const { v4: uuidv4 } = require("uuid");
 const mime = require("mime");
 const async = require("async");
 
-const args = process.argv.slice(2);
+const args = require("minimist")(process.argv.slice(2));
 var QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
 const {
@@ -26,11 +26,12 @@ const {
     GROUP_ID,
     websocketServer,
 } = require("./common.js");
-const isSlient = args.indexOf("-s") > -1;
-if (isSlient) {
+// Slient option
+if (args.s) {
     console = console || {};
     console.log = function () {};
 }
+
 const {
     adduser,
     login,
@@ -49,7 +50,7 @@ const {
 const { Document } = require("./models/Document");
 // const { getDocLists } = require('./controllers/documents');
 
-const PORT = !IS_PRODUCTION_MODE ? 5001 : args.port ? argsg.port : 5001;
+const PORT = !IS_PRODUCTION_MODE ? 5001 : args.port ? args.port : 5001;
 //const PORT = 5001;
 const IP = IS_PRODUCTION_MODE ? PROD_IP : LOCAL_IP;
 

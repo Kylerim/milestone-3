@@ -436,7 +436,7 @@ function queueCallback({ request, response }, completed) {
         //     response.end();
         //     return;
         // } else {
-        docSessions.get(docId).isBeingProcessed = true;
+        // docSessions.get(docId).isBeingProcessed = true;
 
         doc.submitOp(content, { source: connectionId }, (err) => {
             if (err) {

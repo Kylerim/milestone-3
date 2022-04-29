@@ -426,12 +426,12 @@ function queueCallback({ request, response }, completed) {
         //     return;
         // } else {
         //     flag = true;
-        if (docSession.isBeingProcessed) {
+        if (docSessions.get(docId).isBeingProcessed) {
             response.json({ status: "retry" });
             response.end();
             return;
         } else {
-            docSession.isBeingProcessed = true;
+            docSessions.get(docId).isBeingProcessed = true;
 
             doc.submitOp(content, { source: connectionId }, (err) => {
                 if (err) {

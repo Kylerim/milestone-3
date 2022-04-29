@@ -268,12 +268,12 @@ function eventsHandler(request, response) {
 }
 
 function sendUpdateToElastic() {
-    console.log("docSessions: ", docSessions);
-
     docSessions.forEach((docSession, docId) => {
-        console.log("for each docSession: ", docSession);
         if (docSession.isTouched) {
-            console.log("Version of elastic: ", docSession.elasticVersion);
+            console.log(
+                "[Updated] Version of elastic: ",
+                docSession.elasticVersion
+            );
             // docSessions.get(docId).elasticVersion = version;
             let doc = connection.get("documents", docId);
             console.log(doc.data);

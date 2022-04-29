@@ -48,7 +48,7 @@ const {
 const { Document } = require("./models/Document");
 // const { getDocLists } = require('./controllers/documents');
 
-const PORT = IS_PRODUCTION_MODE ? 5001 : 5001;
+const PORT = IS_PRODUCTION_MODE ? [5001, 5002, 5003, 5004, 5005, 5006] : 5001;
 //const PORT = 5001;
 const IP = IS_PRODUCTION_MODE ? PROD_IP : LOCAL_IP;
 
@@ -782,11 +782,13 @@ app.get("/index/search", searchIndex);
 app.get("/index/suggest", suggestIndex);
 
 if (IS_PRODUCTION_MODE) {
-    app.listen(PORT, IP, () =>
-        console.log(
-            `[PRODUCTION MODE] CSE356 Milestone 2: listening on port ${PORT}`
-        )
-    );
+    PORT.forEach((port) => {
+        app.listen(port, IP, () =>
+            console.log(
+                `[PRODUCTION MODE] CSE356 Milestone 2: listening on port ${PORT}`
+            )
+        );
+    });
 } else {
     app.listen(PORT, IP, () =>
         console.log(`CSE356 Milestone 2: listening on port ${PORT}`)

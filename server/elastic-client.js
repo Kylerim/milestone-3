@@ -5,10 +5,6 @@ const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("./common.js");
 
 const client = new Client({
     node: "http://localhost:9200",
-    auth: {
-        username: "elastic",
-        password: "kylerim123",
-    },
 });
 const app = express();
 
@@ -30,93 +26,166 @@ app.use(function (req, res, next) {
     next();
 });
 
-app.post("/index/create", async (req, res) => {
-    const newtitle = req.body.title;
-    const newContent = req.body.content;
-    const id = req.body.id;
-
-    // console.log("title", newtitle)
-    try {
-        const result = await client.index({
-            refresh: true,
-            index: "documents",
-            id: id,
-            document: {
-                title: newtitle,
-                content: newContent,
-            },
-        });
-        res.json({ result });
-    } catch (error) {
-        res.json({ error });
+const searchIndex = async (req, res) => {
+    if (!req.session.user) {
+        //response.setHeader('X-CSE356', GROUP_ID);
+        res.json({ error: true, message: "Not logged in" });
+        return;
     }
-});
-
-app.post("/index/update", async (req, res) => {
-    const newContent = req.body.content;
-    const id = req.body.id;
-
-    console.log("Body", req.body);
-
-    const result = await client.update({
-        refresh: true,
-        index: "documents",
-        id: id,
-        doc: {
-            content: newContent,
-        },
-    });
-
-    res.json({ result });
-});
-
-app.get("/index/search", async (req, res) => {
     const query = req.query.q;
     console.log("Search query is", query);
 
     const result = await client.search({
         index: "documents",
+        size: 10,
+        // query: {
+        //     match: {
+        //         content: query,
+        //     },
+        // },
         query: {
             multi_match: {
+                type: "phrase",
                 query: query,
-                fields: ["title^2", "content"],
+                fields: ["title", "content"],
             },
         },
         highlight: {
             fields: {
-                content: {},
+                content: {
+                    fragment_size: 600,
+                },
             },
+            boundary_scanner: "sentence",
+            boundary_max_scan: 50,
         },
     });
-
+    // console.log(result.hits.hits);
     const toSend = result.hits.hits.map((doc) => {
         return {
-            id: doc._id,
+            docid: doc._id,
             name: doc._source.title,
-            snippet: doc.highlight.content,
+            snippet: doc.highlight.content[0] || "",
         };
     });
     res.json(toSend);
-});
+};
 
-app.get("/index/suggest", async (req, res) => {
+const suggestIndex = async (req, res) => {
+    if (!req.session.user) {
+        //response.setHeader('X-CSE356', GROUP_ID);
+        res.json({ error: true, message: "Not logged in" });
+        return;
+    }
     const query = req.query.q;
     console.log("Suggest query is", query);
     const result = await client.search({
+        size: 10,
         index: "documents",
-        suggest: {
-            gotsuggest: {
-                text: query,
-                term: { field: "content", suggest_mode: "always" },
+        query: {
+            prefix: { content: query },
+        },
+        highlight: {
+            pre_tags: "<<>>",
+            post_tags: "<<>>",
+            fields: {
+                content: {
+                    fragment_size: 0,
+                    number_of_fragments: 1,
+                    boundary_chars: "",
+                },
             },
         },
     });
-    res.json({
-        result,
+    // res.json(result.hits);
+    const ret = new Set();
+    result.hits.hits.forEach((doc) => {
+        const splited = doc.highlight.content[0].split("<<>>");
+        splited.forEach((part) => {
+            if (part.startsWith(query)) {
+                ret.add(part);
+            }
+        });
     });
-});
+    res.json(Array.from(ret));
+};
 
-app.listen(ELASTIC_PORT, LOCAL_IP, () =>
+// app.post("/index/create", async (req, res) => {
+//     const newtitle = req.body.title;
+//     const newContent = req.body.content;
+//     const id = req.body.id;
+
+//     // console.log("title", newtitle)
+//     try {
+//         const result = await client.index({
+//             refresh: true,
+//             index: "documents",
+//             id: id,
+//             document: {
+//                 title: newtitle,
+//                 content: newContent,
+//             },
+//         });
+//         res.json({ result });
+//     } catch (error) {
+//         res.json({ error });
+//     }
+// });
+
+// app.post("/index/update", async (req, res) => {
+//     const newContent = req.body.content;
+//     const id = req.body.id;
+
+//     console.log("Body", req.body);
+
+//     const result = await client.update({
+//         refresh: true,
+//         index: "documents",
+//         id: id,
+//         doc: {
+//             content: newContent,
+//         },
+//     });
+
+//     res.json({ result });
+// });
+
+// app.get("/index/search", async (req, res) => {
+//     const query = req.query.q;
+//     console.log("Search query is", query);
+
+//     const result = await client.search({
+//         index: "documents",
+//         query: {
+//             multi_match: {
+//                 query: query,
+//                 fields: ["title^2", "content"],
+//                 type: "phrase_prefix",
+//             },
+//         },
+//         highlight: {
+//             fields: {
+//                 content: {},
+//             },
+//             // boundary_max_scan: 50,
+//             // boundary_scanner: "sentence",
+//         },
+//     });
+
+//     const toSend = result.hits.hits.map((doc) => {
+//         return {
+//             id: doc._id,
+//             name: doc._source.title,
+//             snippet: doc.highlight.content,
+//         };
+//     });
+//     res.json(toSend);
+// });
+
+app.get("/index/search", searchIndex);
+app.get("/index/suggest", suggestIndex);
+
+app.listen(ELASTIC_PORT, PROD_IP, () =>
     console.log(`CSE356 Milestone 3: listening on port ${ELASTIC_PORT}`)
 );
 

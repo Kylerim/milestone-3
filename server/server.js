@@ -319,21 +319,21 @@ function sendAck(request, docId, connectionId, data, version) {
         });
         return;
     }
-    const client = docSessions.get(docId).clients.get(connectionId);
+    const clients = docSessions.get(docId).clients;
 
-    // clients.forEach((client) => {
-    //     if (client.id == connectionId) {
-    const ackData = { ack: data };
-    client.response.write(`data: ${JSON.stringify(ackData)}\n\n`);
-    console.log(
-        "[ACK] Sending TO (itself):",
-        connectionId,
-        "  [Version]: ",
-        version
-    );
-    console.log(`Ack Data: ${JSON.stringify(ackData.ack)}`);
-    // }
-    // });
+    clients.forEach((client) => {
+        if (client.id == connectionId) {
+            const ackData = { ack: data };
+            client.response.write(`data: ${JSON.stringify(ackData)}\n\n`);
+            console.log(
+                "[ACK] Sending TO (itself):",
+                connectionId,
+                "  [Version]: ",
+                version
+            );
+            console.log(`Ack Data: ${JSON.stringify(ackData.ack)}`);
+        }
+    });
 }
 
 function sendPresenceEventsToAll(request, docId, connectionId, cursor) {

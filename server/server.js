@@ -16,6 +16,7 @@ const { v4: uuidv4 } = require("uuid");
 const mime = require("mime");
 const async = require("async");
 
+const args = process.argv.slice(2);
 var QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
 const {
@@ -48,7 +49,7 @@ const {
 const { Document } = require("./models/Document");
 // const { getDocLists } = require('./controllers/documents');
 
-const PORT = IS_PRODUCTION_MODE ? [5001, 5002, 5003, 5004, 5005, 5006] : 5001;
+const PORT = !IS_PRODUCTION_MODE ? 5001 : args.port ? argsg.port : 5001;
 //const PORT = 5001;
 const IP = IS_PRODUCTION_MODE ? PROD_IP : LOCAL_IP;
 
@@ -781,13 +782,11 @@ app.get("/index/search", searchIndex);
 app.get("/index/suggest", suggestIndex);
 
 if (IS_PRODUCTION_MODE) {
-    PORT.forEach((port) => {
-        app.listen(port, IP, () =>
-            console.log(
-                `[PRODUCTION MODE] CSE356 Milestone 2: listening on port ${port}`
-            )
-        );
-    });
+    app.listen(PORT, IP, () =>
+        console.log(
+            `[PRODUCTION MODE] CSE356 Milestone 2: listening on port ${PORT}`
+        )
+    );
 } else {
     app.listen(PORT, IP, () =>
         console.log(`CSE356 Milestone 2: listening on port ${PORT}`)

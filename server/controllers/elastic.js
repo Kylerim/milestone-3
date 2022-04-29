@@ -1,4 +1,4 @@
-const { Client } = require("@elastic/elasticsearch");
+onst { Client } = require("@elastic/elasticsearch");
 const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("../common.js");
 const QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
@@ -44,6 +44,7 @@ exports.updateIndex = async function (id, delta) {
     console.log("Updating content", content);
     const result = await client.update({
         refresh: true,
+        retry_on_conflict: 2,
         index: "documents",
         id: id,
         doc: {
@@ -66,23 +67,30 @@ exports.searchIndex = async (req, res) => {
     const result = await client.search({
         index: "documents",
         size: 10,
+        // query: {
+        //     match: {
+        //         content: query,
+        //     },
+        // },
         query: {
             multi_match: {
+                type: "cross_fields",
                 query: query,
                 fields: ["title", "content"],
             },
         },
         highlight: {
             fields: {
-                content: {},
-                title: {},
+                content: {
+                    fragment_size: 300,
+                },
             },
         },
     });
-    console.log(result.hits.hits);
+    // console.log(result.hits.hits);
     const toSend = result.hits.hits.map((doc) => {
         return {
-            id: doc._id,
+            docid: doc._id,
             name: doc._source.title,
             snippet: doc.highlight.content[0] || "",
         };
@@ -99,25 +107,64 @@ exports.suggestIndex = async (req, res) => {
     const query = req.query.q;
     console.log("Suggest query is", query);
     const result = await client.search({
+        size: 10,
         index: "documents",
-        suggest: {
-            suggester: {
-                text: query,
-                term: {
-                    field: "content",
-                    suggest_mode: "always",
-                    prefix_length: query.length,
-                    min_word_length: query.length,
-                    string_distance: "ngram",
-                    sort: "frequency",
+        query: {
+            prefix: { content: query },
+        },
+        highlight: {
+            pre_tags: "<<>>",
+            post_tags: "<<>>",
+            fields: {
+                content: {
+                    fragment_size: 0,
+                    number_of_fragments: 1,
+                    boundary_chars: "",
                 },
             },
         },
     });
-    console.log(result.suggest.suggester);
-    const toSend = result.suggest.suggester[0].options.map((opt) => opt.text);
-    res.json(toSend);
+    // res.json(result.hits);
+    const ret = new Set();
+    result.hits.hits.forEach((doc) => {
+        const splited = doc.highlight.content[0].split("<<>>");
+        splited.forEach((part) => {
+            if (part.startsWith(query)) {
+                ret.add(part);
+            }
+        });
+    });
+    res.json(Array.from(ret));
 };
+
+// exports.suggestIndex = async (req, res) => {
+//     if (!req.session.user) {
+//         //response.setHeader('X-CSE356', GROUP_ID);
+//         res.json({ error: true, message: "Not logged in" });
+//         return;
+//     }
+//     const query = req.query.q;
+//     console.log("Suggest query is", query);
+//     const result = await client.search({
+//         index: "documents",
+//         suggest: {
+//             suggester: {
+//                 text: query,
+//                 term: {
+//                     field: "content",
+//                     suggest_mode: "popular",
+//                     prefix_length: query.length,
+//                     min_word_length: query.length + 1,
+//                     string_distance: "ngram",
+//                     // sort: "frequency",
+//                 },
+//             },
+//         },
+//     });
+//     console.log(result.suggest.suggester);
+//     const toSend = result.suggest.suggester[0].options.map((opt) => opt.text);
+//     res.json(toSend);
+// };
 
 // curl -X PUT "localhost:9200/documents?pretty" -H 'Content-Type: application/json' -d'
 // {

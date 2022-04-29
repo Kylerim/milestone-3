@@ -270,14 +270,14 @@ function eventsHandler(request, response) {
 function sendUpdateToElastic() {
     console.log("docSessions: ", docSessions);
 
-    docSessions.forEach((docSession) => {
+    docSessions.forEach((docSession, docId) => {
         console.log("for each docSession: ", docSession);
         if (docSession.isTouched) {
             console.log("Version of elastic: ", docSession.elasticVersion);
             // docSessions.get(docId).elasticVersion = version;
-            let doc = connection.get("documents", docSession.docId);
+            let doc = connection.get("documents", docId);
             console.log(doc.data);
-            updateIndex(docSession.docId, doc.data.ops);
+            updateIndex(docId, doc.data.ops);
             docSession.isTouched = false;
         }
     });

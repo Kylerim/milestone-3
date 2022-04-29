@@ -460,7 +460,7 @@ function queueCallback({ request, response }, completed) {
                     sendAck(request, docId, connectionId, content, version);
                     completed(null, { connectionId });
                     // flag = false;
-                    docSession.isBeingProcessed = false;
+                    docSessions.get(docId).isBeingProcessed = false;
                     response.json({ status: "ok" });
                     response.end();
                     return;

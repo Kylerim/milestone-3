@@ -147,7 +147,7 @@ function eventsHandler(request, response) {
     // if no active docsession, add to current doc session map
     if (!docSessions.has(docId)) {
         const doc = connection.get("documents", docId);
-        const queue = async.queue(queueCallback, 1);
+        const queue = async.queue(queueCallback, 4);
         if (!doc.subscribed) {
             console.log();
             doc.subscribe(function (err) {

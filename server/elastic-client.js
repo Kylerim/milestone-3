@@ -8,10 +8,6 @@ const args = require("minimist")(process.argv.slice(2));
 
 const client = new Client({
     node: "http://localhost:9200",
-    auth: {
-        username: "elastic",
-        password: "kylerim123",
-    },
 });
 const app = express();
 
@@ -55,7 +51,6 @@ const searchIndex = async (req, res) => {
                 type: "phrase",
                 query: query,
                 fields: ["title", "content"],
-                analyzer: "standard",
             },
         },
         highlight: {
@@ -93,12 +88,7 @@ const suggestIndex = async (req, res) => {
         size: 10,
         index: "documents",
         query: {
-            match: {
-                content: {
-                    query: query,
-                    analyzer: "standard",
-                },
-            },
+            prefix: { content: query },
         },
         highlight: {
             pre_tags: "<<>>",

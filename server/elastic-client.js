@@ -2,12 +2,7 @@ const { Client } = require("@elastic/elasticsearch");
 // const session = require("express-session");
 const express = require("express");
 const bodyParser = require("body-parser");
-const {
-    PROD_IP,
-    ELASTIC_PORT,
-    GROUP_ID,
-    IS_PRODUCTION_MODE,
-} = require("./common.js");
+const { PROD_IP, GROUP_ID, IS_PRODUCTION_MODE } = require("./common.js");
 
 const args = require("minimist")(process.argv.slice(2));
 

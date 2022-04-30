@@ -1,5 +1,5 @@
 const { Client } = require("@elastic/elasticsearch");
-const session = require("express-session");
+// const session = require("express-session");
 const express = require("express");
 const bodyParser = require("body-parser");
 const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("./common.js");

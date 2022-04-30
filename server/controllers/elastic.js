@@ -51,22 +51,15 @@ exports.updateIndex = async function (id, delta) {
     //         content: content,
     //     },
     // });
-    const result = await client.update(
-        {
-            refresh: true,
-            retry_on_conflict: 2,
-            index: "documents",
-            id: id,
-            doc: {
-                content: content,
-            },
+    const result = await client.update({
+        refresh: true,
+        retry_on_conflict: 2,
+        index: "documents",
+        id: id,
+        doc: {
+            content: content,
         },
-        {
-            asStream: true,
-            meta: true,
-        }
-    );
-
+    });
     return result;
 };
 

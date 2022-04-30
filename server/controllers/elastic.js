@@ -18,7 +18,7 @@ const queueCallback = async function ({ id, delta }, completed) {
     let html = converter.convert();
     const content = convert(html, {
         wordwrap: null,
-    }).replace("\n", "");
+    }).replaceAll("\n", "");
 
     // const content = toPlaintext(delta);
     console.log("Updating content", content);

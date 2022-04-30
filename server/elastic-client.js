@@ -10,16 +10,16 @@ const app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-// app.use(
-//     session({
-//         secret: "secret-key",
-//         saveUninitialized: true,
-//         resave: false,
-//         store: sessionStore,
-//         cookie: { secure: false },
-//         expires: new Date(Date.now() + 1 * 86400 * 1000), //expire 1 day
-//     })
-// );
+app.use(
+    session({
+        secret: "secret-key",
+        saveUninitialized: true,
+        resave: false,
+        store: sessionStore,
+        cookie: { secure: false },
+        expires: new Date(Date.now() + 1 * 86400 * 1000), //expire 1 day
+    })
+);
 
 app.use(function (req, res, next) {
     res.setHeader("X-CSE356", GROUP_ID);

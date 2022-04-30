@@ -61,7 +61,7 @@ const searchIndex = async (req, res) => {
             boundary_max_scan: 50,
         },
     });
-    // console.log(result.hits.hits);
+    console.log("search result", result.hits.hits);
     const toSend = result.hits.hits.map((doc) => {
         return {
             docid: doc._id,
@@ -100,6 +100,7 @@ const suggestIndex = async (req, res) => {
     });
     // res.json(result.hits);
     const ret = new Set();
+    console.log("search result", result.hits.hits);
     result.hits.hits.forEach((doc) => {
         const splited = doc.highlight.content[0].split("<<>>");
         splited.forEach((part) => {

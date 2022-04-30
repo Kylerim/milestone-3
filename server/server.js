@@ -41,8 +41,6 @@ const {
 } = require("./controllers/auth");
 
 const {
-    searchIndex,
-    suggestIndex,
     createIndex,
     updateIndex,
     deleteIndex,
@@ -813,8 +811,8 @@ app.post("/users/login", login);
 app.get("/users/logout", logout);
 app.get("/users/verify", verify);
 
-app.get("/index/search", searchIndex);
-app.get("/index/suggest", suggestIndex);
+// app.get("/index/search", searchIndex);
+// app.get("/index/suggest", suggestIndex);
 
 if (IS_PRODUCTION_MODE) {
     app.listen(PORT, IP, () =>

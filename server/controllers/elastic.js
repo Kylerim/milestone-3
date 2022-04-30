@@ -2,6 +2,7 @@ const { Client } = require("@elastic/elasticsearch");
 const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("../common.js");
 const QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
+const async = require("async");
 
 const { convert } = require("html-to-text");
 const client = new Client({
@@ -12,6 +13,7 @@ const client = new Client({
     },
 });
 
+const queue = async.queue(queueCallback, 3);
 exports.createIndex = async function (id, title, content) {
     const result = await client.index({
         refresh: true,
@@ -34,7 +36,18 @@ exports.deleteIndex = async function (id) {
     return result;
 };
 
-exports.updateIndex = async function (id, delta) {
+exports.updateIndex = function (id, delta) {
+    queue.push({ id, delta }, (error, { docid }) => {
+        if (error) {
+            console.log(`An error occurred while processing task ${task}`);
+        } else {
+            console.log(`Finished processing task ${docid}
+                   tasks remaining`);
+        }
+    });
+};
+
+const queueCallback = async function ({ id, delta }, completed) {
     let converter = new QuillDeltaToHtmlConverter(delta, {});
     let html = converter.convert();
     const content = convert(html, {
@@ -53,14 +66,16 @@ exports.updateIndex = async function (id, delta) {
     // });
     const result = await client.update({
         refresh: true,
-        retry_on_conflict: 2,
+        retry_on_conflict: 3,
         index: "documents",
         id: id,
         doc: {
             content: content,
         },
     });
-    return result;
+    if (result) {
+        completed(null, { docid: id });
+    }
 };
 
 exports.searchIndex = async (req, res) => {

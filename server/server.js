@@ -455,7 +455,9 @@ function updateOpsQueue(request, response) {
     }
 
     let connectionId = request.params.connectionId;
-    let doc = connection.fetchSnapshot("documents", docId);
+    let doc = connection.fetchSnapshot("documents", docId, () => {
+        console.log("fetched");
+    });
     let content = request.body.op;
     let version = request.body.version;
     // let remaining = 0;
@@ -598,9 +600,7 @@ async function createDoc(request, response) {
     names.set(docid, name);
 
     console.log("docId: " + docid);
-    const doc = connection.get("documents", docid, () => {
-        console.log("fetched");
-    });
+    const doc = connection.get("documents", docid);
     //adding document to index
     await createIndex(docid, name, "");
     doc.fetch(function (err) {

@@ -16,9 +16,10 @@ const client = new Client({
 const queueCallback = async function ({ id, delta }, completed) {
     let converter = new QuillDeltaToHtmlConverter(delta, {});
     let html = converter.convert();
-    const content = convert(html, {
+    let content = convert(html, {
         wordwrap: null,
     });
+    content = content.replaceAll("\n", "");
     // const content = toPlaintext(delta);
     console.log("Updating content", content);
     // const result = await client.update({
@@ -79,87 +80,87 @@ exports.updateIndex = function (id, delta) {
     });
 };
 
-exports.searchIndex = async (req, res) => {
-    if (!req.session.user) {
-        //response.setHeader('X-CSE356', GROUP_ID);
-        res.json({ error: true, message: "Not logged in" });
-        return;
-    }
-    const query = req.query.q;
-    console.log("Search query is", query);
+// exports.searchIndex = async (req, res) => {
+//     if (!req.session.user) {
+//         //response.setHeader('X-CSE356', GROUP_ID);
+//         res.json({ error: true, message: "Not logged in" });
+//         return;
+//     }
+//     const query = req.query.q;
+//     console.log("Search query is", query);
 
-    const result = await client.search({
-        index: "documents",
-        size: 10,
-        // query: {
-        //     match: {
-        //         content: query,
-        //     },
-        // },
-        query: {
-            multi_match: {
-                type: "phrase",
-                query: query,
-                fields: ["title", "content"],
-            },
-        },
-        highlight: {
-            fields: {
-                content: {
-                    fragment_size: 300,
-                },
-            },
-        },
-    });
-    // console.log(result.hits.hits);
-    const toSend = result.hits.hits.map((doc) => {
-        return {
-            docid: doc._id,
-            name: doc._source.title,
-            snippet: doc.highlight.content[0] || "",
-        };
-    });
-    res.json(toSend);
-};
+//     const result = await client.search({
+//         index: "documents",
+//         size: 10,
+//         // query: {
+//         //     match: {
+//         //         content: query,
+//         //     },
+//         // },
+//         query: {
+//             multi_match: {
+//                 type: "phrase",
+//                 query: query,
+//                 fields: ["title", "content"],
+//             },
+//         },
+//         highlight: {
+//             fields: {
+//                 content: {
+//                     fragment_size: 300,
+//                 },
+//             },
+//         },
+//     });
+//     // console.log(result.hits.hits);
+//     const toSend = result.hits.hits.map((doc) => {
+//         return {
+//             docid: doc._id,
+//             name: doc._source.title,
+//             snippet: doc.highlight.content[0] || "",
+//         };
+//     });
+//     res.json(toSend);
+// };
 
-exports.suggestIndex = async (req, res) => {
-    if (!req.session.user) {
-        //response.setHeader('X-CSE356', GROUP_ID);
-        res.json({ error: true, message: "Not logged in" });
-        return;
-    }
-    const query = req.query.q;
-    console.log("Suggest query is", query);
-    const result = await client.search({
-        size: 10,
-        index: "documents",
-        query: {
-            prefix: { content: query },
-        },
-        highlight: {
-            pre_tags: "<<>>",
-            post_tags: "<<>>",
-            fields: {
-                content: {
-                    fragment_size: 0,
-                    number_of_fragments: 1,
-                    boundary_chars: "",
-                },
-            },
-        },
-    });
-    // res.json(result.hits);
-    const ret = new Set();
-    result.hits.hits.forEach((doc) => {
-        const splited = doc.highlight.content[0].split("<<>>");
-        splited.forEach((part) => {
-            if (part.startsWith(query)) {
-                ret.add(part);
-            }
-        });
-    });
-    res.json(Array.from(ret));
-};
+// exports.suggestIndex = async (req, res) => {
+//     if (!req.session.user) {
+//         //response.setHeader('X-CSE356', GROUP_ID);
+//         res.json({ error: true, message: "Not logged in" });
+//         return;
+//     }
+//     const query = req.query.q;
+//     console.log("Suggest query is", query);
+//     const result = await client.search({
+//         size: 10,
+//         index: "documents",
+//         query: {
+//             prefix: { content: query },
+//         },
+//         highlight: {
+//             pre_tags: "<<>>",
+//             post_tags: "<<>>",
+//             fields: {
+//                 content: {
+//                     fragment_size: 0,
+//                     number_of_fragments: 1,
+//                     boundary_chars: "",
+//                 },
+//             },
+//         },
+//     });
+//     // res.json(result.hits);
+//     const ret = new Set();
+//     result.hits.hits.forEach((doc) => {
+//         const splited = doc.highlight.content[0].split("<<>>");
+//         splited.forEach((part) => {
+//             if (part.startsWith(query)) {
+//                 ret.add(part);
+//             }
+//         });
+//     });
+//     res.json(Array.from(ret));
+// };
 
 // exports.suggestIndex = async (req, res) => {
 //     if (!req.session.user) {

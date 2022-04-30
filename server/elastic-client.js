@@ -1,7 +1,14 @@
 const { Client } = require("@elastic/elasticsearch");
 const express = require("express");
 const bodyParser = require("body-parser");
-const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("./common.js");
+const {
+    PROD_IP,
+    ELASTIC_PORT,
+    GROUP_ID,
+    IS_PRODUCTION_MODE,
+} = require("./common.js");
+
+const args = require("minimist")(process.argv.slice(2));
 
 const client = new Client({
     node: "http://localhost:9200",
@@ -184,6 +191,8 @@ const suggestIndex = async (req, res) => {
 
 app.get("/index/search", searchIndex);
 app.get("/index/suggest", suggestIndex);
+
+const ELASTIC_PORT = !IS_PRODUCTION_MODE ? 6001 : args.port ? args.port : 6001;
 
 app.listen(ELASTIC_PORT, PROD_IP, () =>
     console.log(`CSE356 Milestone 3: listening on port ${ELASTIC_PORT}`)

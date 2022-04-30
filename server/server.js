@@ -130,7 +130,6 @@ function eventsHandler(request, response) {
         const doc = connection.get("documents", docId);
         // const queue = async.queue(queueCallback, 1);
         if (!doc.subscribed) {
-            console.log();
             doc.subscribe(function (err) {
                 console.log("Subscribed to ", docId);
                 if (err) throw err;

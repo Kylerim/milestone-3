@@ -20,7 +20,7 @@ const queueCallback = async function ({ id, delta }, completed) {
         wordwrap: null,
     });
 
-    content = content.replaceAll("\n", "");
+    // content = content.replaceAll("\n", "");
 
     // const content = toPlaintext(delta);
     console.log("Updating content", content);

@@ -13,6 +13,37 @@ const client = new Client({
     },
 });
 
+const queueCallback = async function ({ id, delta }, completed) {
+    let converter = new QuillDeltaToHtmlConverter(delta, {});
+    let html = converter.convert();
+    const content = convert(html, {
+        wordwrap: null,
+    });
+    // const content = toPlaintext(delta);
+    console.log("Updating content", content);
+    // const result = await client.update({
+    //     refresh: true,
+    //     retry_on_conflict: 2,
+    //     index: "documents",
+    //     id: id,
+    //     doc: {
+    //         content: content,
+    //     },
+    // });
+    const result = await client.update({
+        refresh: true,
+        retry_on_conflict: 3,
+        index: "documents",
+        id: id,
+        doc: {
+            content: content,
+        },
+    });
+    if (result) {
+        completed(null, { docid: id });
+    }
+};
+
 const queue = async.queue(queueCallback, 3);
 exports.createIndex = async function (id, title, content) {
     const result = await client.index({
@@ -45,37 +76,6 @@ exports.updateIndex = function (id, delta) {
                    tasks remaining`);
         }
     });
-};
-
-const queueCallback = async function ({ id, delta }, completed) {
-    let converter = new QuillDeltaToHtmlConverter(delta, {});
-    let html = converter.convert();
-    const content = convert(html, {
-        wordwrap: null,
-    });
-    // const content = toPlaintext(delta);
-    console.log("Updating content", content);
-    // const result = await client.update({
-    //     refresh: true,
-    //     retry_on_conflict: 2,
-    //     index: "documents",
-    //     id: id,
-    //     doc: {
-    //         content: content,
-    //     },
-    // });
-    const result = await client.update({
-        refresh: true,
-        retry_on_conflict: 3,
-        index: "documents",
-        id: id,
-        doc: {
-            content: content,
-        },
-    });
-    if (result) {
-        completed(null, { docid: id });
-    }
 };
 
 exports.searchIndex = async (req, res) => {

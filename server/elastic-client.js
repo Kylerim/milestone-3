@@ -63,9 +63,10 @@ const searchIndex = async (req, res) => {
             boundary_max_scan: 50,
         },
     });
-    console.log("results");
-    console.log(result.hits.hits);
+    // console.log("results");
+    // console.log(result.hits.hits);
     const toSend = result.hits.hits.map((doc) => {
+        console.log(doc._id);
         return {
             docid: doc._id,
             name: doc._source.title,
@@ -103,10 +104,11 @@ const suggestIndex = async (req, res) => {
     });
     // res.json(result.hits);
     const ret = new Set();
-    console.log("results");
-    console.log(result.hits.hits);
+    // console.log("results");
+    // console.log(result.hits.hits);
     result.hits.hits.forEach((doc) => {
         const splited = doc.highlight.content[0].split("<<>>");
+        console.log(doc._id);
         splited.forEach((part) => {
             if (part.startsWith(query)) {
                 ret.add(part);

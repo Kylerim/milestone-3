@@ -2,6 +2,7 @@ const { Client } = require("@elastic/elasticsearch");
 const { PROD_IP, ELASTIC_PORT, GROUP_ID, LOCAL_IP } = require("../common.js");
 const QuillDeltaToHtmlConverter =
     require("quill-delta-to-html").QuillDeltaToHtmlConverter;
+const async = require("async");
 
 const { convert } = require("html-to-text");
 const client = new Client({
@@ -11,6 +12,39 @@ const client = new Client({
         password: "kylerim123",
     },
 });
+
+const queueCallback = async function ({ id, delta }, completed) {
+    let converter = new QuillDeltaToHtmlConverter(delta, {});
+    let html = converter.convert();
+    const content = convert(html, {
+        wordwrap: null,
+    });
+    // const content = toPlaintext(delta);
+    console.log("Updating content", content);
+    // const result = await client.update({
+    //     refresh: true,
+    //     retry_on_conflict: 2,
+    //     index: "documents",
+    //     id: id,
+    //     doc: {
+    //         content: content,
+    //     },
+    // });
+    const result = await client.update({
+        refresh: true,
+        retry_on_conflict: 3,
+        index: "documents",
+        id: id,
+        doc: {
+            content: content,
+        },
+    });
+    if (result) {
+        completed(null, id);
+    }
+};
+
+const queue = async.queue(queueCallback, 3);
 
 exports.createIndex = async function (id, title, content) {
     const result = await client.index({
@@ -34,40 +68,15 @@ exports.deleteIndex = async function (id) {
     return result;
 };
 
-exports.updateIndex = async function (id, delta) {
-    let converter = new QuillDeltaToHtmlConverter(delta, {});
-    let html = converter.convert();
-    const content = convert(html, {
-        wordwrap: null,
-    });
-    // const content = toPlaintext(delta);
-    console.log("Updating content", content);
-    // const result = await client.update({
-    //     refresh: true,
-    //     retry_on_conflict: 2,
-    //     index: "documents",
-    //     id: id,
-    //     doc: {
-    //         content: content,
-    //     },
-    // });
-    const result = await client.update(
-        {
-            refresh: true,
-            retry_on_conflict: 2,
-            index: "documents",
-            id: id,
-            doc: {
-                content: content,
-            },
-        },
-        {
-            asStream: true,
-            meta: true,
+exports.updateIndex = function (id, delta) {
+    queue.push({ id, delta }, (error, docid) => {
+        if (error) {
+            console.log(`An error occurred while processing task`);
+        } else {
+            console.log(`Finished processing task ${docid}
+                   tasks remaining`);
         }
-    );
-
-    return result;
+    });
 };
 
 exports.searchIndex = async (req, res) => {

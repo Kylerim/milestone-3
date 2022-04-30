@@ -1,4 +1,5 @@
 const { Client } = require("@elastic/elasticsearch");
+// const session = require("express-session");
 const express = require("express");
 const bodyParser = require("body-parser");
 const {
@@ -34,11 +35,11 @@ app.use(function (req, res, next) {
 });
 
 const searchIndex = async (req, res) => {
-    if (!req.session.user) {
-        //response.setHeader('X-CSE356', GROUP_ID);
-        res.json({ error: true, message: "Not logged in" });
-        return;
-    }
+    // if (!req.session.user) {
+    //     //response.setHeader('X-CSE356', GROUP_ID);
+    //     res.json({ error: true, message: "Not logged in" });
+    //     return;
+    // }
     const query = req.query.q;
     console.log("Search query is", query);
 
@@ -67,7 +68,8 @@ const searchIndex = async (req, res) => {
             boundary_max_scan: 50,
         },
     });
-    // console.log(result.hits.hits);
+    console.log("results");
+    console.log(result.hits.hits);
     const toSend = result.hits.hits.map((doc) => {
         return {
             docid: doc._id,
@@ -79,11 +81,11 @@ const searchIndex = async (req, res) => {
 };
 
 const suggestIndex = async (req, res) => {
-    if (!req.session.user) {
-        //response.setHeader('X-CSE356', GROUP_ID);
-        res.json({ error: true, message: "Not logged in" });
-        return;
-    }
+    // if (!req.session.user) {
+    //     //response.setHeader('X-CSE356', GROUP_ID);
+    //     res.json({ error: true, message: "Not logged in" });
+    //     return;
+    // }
     const query = req.query.q;
     console.log("Suggest query is", query);
     const result = await client.search({
@@ -106,6 +108,8 @@ const suggestIndex = async (req, res) => {
     });
     // res.json(result.hits);
     const ret = new Set();
+    console.log("results");
+    console.log(result.hits.hits);
     result.hits.hits.forEach((doc) => {
         const splited = doc.highlight.content[0].split("<<>>");
         splited.forEach((part) => {

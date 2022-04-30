@@ -456,7 +456,7 @@ function updateOpsQueue(request, response) {
 
     let connectionId = request.params.connectionId;
     let doc = connection.fetchSnapshot("documents", docId, () => {
-        console.log("fetched");
+        console.log("fetched", doc);
     });
     let content = request.body.op;
     let version = request.body.version;

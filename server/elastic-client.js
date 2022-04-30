@@ -11,16 +11,16 @@ const app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(
-    session({
-        secret: "secret-key",
-        saveUninitialized: true,
-        resave: false,
-        store: sessionStore,
-        cookie: { secure: false },
-        expires: new Date(Date.now() + 1 * 86400 * 1000), //expire 1 day
-    })
-);
+// app.use(
+//     session({
+//         secret: "secret-key",
+//         saveUninitialized: true,
+//         resave: false,
+//         store: sessionStore,
+//         cookie: { secure: false },
+//         expires: new Date(Date.now() + 1 * 86400 * 1000), //expire 1 day
+//     })
+// );
 
 app.use(function (req, res, next) {
     res.setHeader("X-CSE356", GROUP_ID);
@@ -28,11 +28,11 @@ app.use(function (req, res, next) {
 });
 
 const searchIndex = async (req, res) => {
-    if (!req.session.user) {
-        //response.setHeader('X-CSE356', GROUP_ID);
-        res.json({ error: true, message: "Not logged in" });
-        return;
-    }
+    // if (!req.session.user) {
+    //     //response.setHeader('X-CSE356', GROUP_ID);
+    //     res.json({ error: true, message: "Not logged in" });
+    //     return;
+    // }
     const query = req.query.q;
     console.log("Search query is", query);
 
@@ -73,11 +73,11 @@ const searchIndex = async (req, res) => {
 };
 
 const suggestIndex = async (req, res) => {
-    if (!req.session.user) {
-        //response.setHeader('X-CSE356', GROUP_ID);
-        res.json({ error: true, message: "Not logged in" });
-        return;
-    }
+    // if (!req.session.user) {
+    //     //response.setHeader('X-CSE356', GROUP_ID);
+    //     res.json({ error: true, message: "Not logged in" });
+    //     return;
+    // }
     const query = req.query.q;
     console.log("Suggest query is", query);
     const result = await client.search({

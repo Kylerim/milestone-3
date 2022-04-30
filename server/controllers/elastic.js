@@ -16,9 +16,11 @@ const client = new Client({
 const queueCallback = async function ({ id, delta }, completed) {
     let converter = new QuillDeltaToHtmlConverter(delta, {});
     let html = converter.convert();
-    const content = convert(html, {
+    let content = convert(html, {
         wordwrap: null,
-    }).replaceAll("\n", "");
+    });
+
+    content = content.replaceAll("\n", "");
 
     // const content = toPlaintext(delta);
     console.log("Updating content", content);

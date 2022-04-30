@@ -598,7 +598,9 @@ async function createDoc(request, response) {
     names.set(docid, name);
 
     console.log("docId: " + docid);
-    const doc = connection.get("documents", docid);
+    const doc = connection.get("documents", docid, () => {
+        console.log("fetched");
+    });
     //adding document to index
     await createIndex(docid, name, "");
     doc.fetch(function (err) {

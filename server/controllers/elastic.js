@@ -40,11 +40,12 @@ const queueCallback = async function ({ id, delta }, completed) {
         },
     });
     if (result) {
-        completed(null, { docid: id });
+        completed(null, id);
     }
 };
 
 const queue = async.queue(queueCallback, 3);
+
 exports.createIndex = async function (id, title, content) {
     const result = await client.index({
         refresh: true,
@@ -68,7 +69,7 @@ exports.deleteIndex = async function (id) {
 };
 
 exports.updateIndex = function (id, delta) {
-    queue.push({ id, delta }, (error, { docid }) => {
+    queue.push({ id, delta }, (error, docid) => {
         if (error) {
             console.log(`An error occurred while processing task ${task}`);
         } else {
